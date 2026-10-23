@@ -11,6 +11,10 @@
 
 ## 1. 接手时先区分三个版本
 
+分支整理后保留 `main`、`fpga/adam-upstream-faithful` 和 `fpga/npu128-bringup`，
+用途见 [README 分支说明](../README.md#分支与比较入口)。早期阶段分支已移除，提交仍在
+`main` 历史中；下表的图片基线通过保留的标签访问。
+
 | 版本 | 代码与固定位置 | 已有结果 | 尚未完成 |
 | --- | --- | --- | --- |
 | 当前完整上游 | `fpga/adam-upstream-faithful`，`971037a`；`rtl/upstream/` + `third_party/adamgallas/source/` | 原始完整卷积核的 CSR/AXIS 仿真，576 个 INT8 乘积单元 | Pango 有效综合结果、SoC/DMA 接入、完整 YOLOX 推理、上板 |

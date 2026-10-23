@@ -5,7 +5,8 @@
 它尚未连接 AXI/DDR/UART。现已通过 [图片联合仿真](IMAGE_SIM.md) 执行完整 YOLOX-Tiny 图，
 其中所有卷积由本后端执行，其余算子及调度由电脑执行。
 
-源码分支 `npu/adamgallas-128-verilator`，上游固定为
+初始实现固定在提交 `ccf9172`，后续 128 MAC NPU 对照保留在 `fpga/npu128-bringup`。
+初始阶段分支已移除，提交仍可从 `main` 历史访问。上游固定为
 `6ba312bd220e67a987d3417bacd030db30b15770`。[来源说明](../third_party/adamgallas/README.md)
 和完整 Apache-2.0 许可随代码保留。没有修改 hgb、上级三个文档或 AGENTS.md，
 没有启动、停止或修改 PDS 综合与布线。
