@@ -1,0 +1,49 @@
+{
+  "mode": "PC CPU FP32 reference only; no FPGA or INT8 execution",
+  "upstream_commit": "6ddff4824372906469a7fae2dc3206c7aa4bbaee",
+  "weights_sha256": "cd28f55fbbc1829f99d9ac9b38a16d259a22889739c8728ea877610201feff7b",
+  "image_sha256": "5a9522051c3cec2bbd2f6323fccba32e8fbf3ddcc2b3e2fd46b04c720bc6f866",
+  "torch": "2.14.0+cu126",
+  "opencv": "5.0.0",
+  "input_size": 416,
+  "original_hw": [
+    576,
+    768
+  ],
+  "preprocess": "official non-legacy BGR, top-left resize, pad=114, CHW, no /255",
+  "confidence": 0.25,
+  "nms_iou": 0.45,
+  "class_agnostic_nms": true,
+  "detections": [
+    {
+      "class_id": 16,
+      "score": 0.8550712621077103,
+      "xyxy_original": [
+        132.785888671875,
+        206.63514122596155,
+        325.6867112379808,
+        543.0907076322115
+      ]
+    },
+    {
+      "class_id": 1,
+      "score": 0.8026438153126136,
+      "xyxy_original": [
+        51.74746469350962,
+        137.1764197716346,
+        572.3125375600962,
+        423.6487004206731
+      ]
+    },
+    {
+      "class_id": 2,
+      "score": 0.7981901076957776,
+      "xyxy_original": [
+        466.2675123948318,
+        78.39435988206131,
+        692.4827974759615,
+        171.25696739783655
+      ]
+    }
+  ]
+}

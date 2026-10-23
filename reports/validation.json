@@ -1,0 +1,99 @@
+{
+  "date": "2026-10-23",
+  "branch": "npu/yolox-nano-feasibility",
+  "scope": "standalone RTL and PC software reference; no hgb integration or PDS",
+  "rtl": {
+    "source_sha256": {
+      "rtl/systolic_pe.sv": "a9f6073b08130d570a43b643954070e636404cb81898ecd38f4c56e3e7242357",
+      "rtl/systolic_tile.sv": "553ccc9ff2fcd0b0c8c24b33730371ab78bdbf3341a66d249c011426d3b7297c",
+      "tb/tb_systolic_tile.sv": "40f34568195622220a858ad646982f763a8f0accd190a3685008ef1a570fd7e3"
+    },
+    "tool": "Verilator 5.052 2026-09-05 rev v5.052",
+    "results": [
+      {
+        "rows": 1,
+        "cols": 1,
+        "gemm_cases": 101,
+        "status": "PASS",
+        "log": "build/sim/1x1/run.log"
+      },
+      {
+        "rows": 2,
+        "cols": 3,
+        "gemm_cases": 101,
+        "status": "PASS",
+        "log": "build/sim/2x3/run.log"
+      },
+      {
+        "rows": 4,
+        "cols": 4,
+        "gemm_cases": 101,
+        "status": "PASS",
+        "log": "build/sim/4x4/run.log"
+      },
+      {
+        "rows": 8,
+        "cols": 8,
+        "gemm_cases": 101,
+        "status": "PASS",
+        "log": "build/sim/8x8/run.log"
+      }
+    ],
+    "skip": 0
+  },
+  "lint": {
+    "command": "make lint",
+    "result": "PASS"
+  },
+  "model_audit": {
+    "upstream": "https://github.com/Megvii-BaseDetection/YOLOX",
+    "commit": "6ddff4824372906469a7fae2dc3206c7aa4bbaee",
+    "torch": "2.14.0+cu126",
+    "mode": "CPU eval, synthetic zeros, random weights; shape/MAC audit only",
+    "parameters": 912159,
+    "conv_weight_elements": 896512
+  },
+  "profiles": [
+    {
+      "size": 320,
+      "output_shape": [
+        1,
+        2100,
+        85
+      ],
+      "input_u8_bytes": 307200,
+      "conv_macs": 309203200,
+      "conv_macs_by_kind": {
+        "regular_spatial": 44236800,
+        "depthwise": 11059200,
+        "pointwise": 253907200
+      },
+      "largest_conv_output_elements": 409600
+    },
+    {
+      "size": 416,
+      "output_shape": [
+        1,
+        3549,
+        85
+      ],
+      "input_u8_bytes": 519168,
+      "conv_macs": 522553408,
+      "conv_macs_by_kind": {
+        "regular_spatial": 74760192,
+        "depthwise": 18690048,
+        "pointwise": 429103168
+      },
+      "largest_conv_output_elements": 692224
+    }
+  ],
+  "reference_command": "PYTHONPATH=build/python-deps python tools/reference_detect.py --source build/upstream/YOLOX --weights build/models/yolox_nano.pth --image build/upstream/YOLOX/assets/dog.jpg --output build/dog-reference.json",
+  "not_run": [
+    "COCO val2017",
+    "INT8 calibration",
+    "full CNN RTL",
+    "hgb regressions",
+    "PDS",
+    "board"
+  ]
+}
