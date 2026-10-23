@@ -8,7 +8,10 @@
 `upstream-blobs.json` 记录从 GitHub 读取的原始 blob ID。`.gitattributes` 保留其原有换行和空白。
 这里不含 Vivado 生成文件、bitstream、SDK、模型权重或摄像头/显示工程。
 
-本项目的修改位于 `rtl/adam/`，不覆盖本目录：
+当前主线通过 `rtl/upstream/adam_upstream.sv` 直接例化本目录的完整 `Accel_Conv`，
+50 个 RTL 文件保持原样。[当前验证](../../docs/UPSTREAM.md) 已通过原 CSR/AXIS 的完整卷积流。
+
+此前 128 MAC 参考实现的修改位于 `rtl/adam/`，不覆盖本目录：
 
 | 上游模块 | 移植后的对应文件与变化 |
 | --- | --- |
@@ -17,5 +20,5 @@
 | `module_conv_kernel_1x2*.v` | `adam_mac128.sv`：保留两输出共享输入的组织，重排为 8 输入×16 输出；kernel tap 分时执行，求和位宽完整保留 |
 | 原有窗口/任务控制、18 位累加 | `adam_conv128.sv`：新 tile 取数与握手控制，1×1/3×3、stride、padding、INT32 累加；不保持原版寄存器/流接口兼容 |
 
-原版完整加速器没有经过本项目 Verilator 回归。原版成对乘法和 RAM 被直接例化为对照，
-新卷积后端另与独立整数卷积比较。原版的量化、AXIS、CSR、DMA 和软件调度尚未迁入。
+128 MAC 参考实现只直接例化原版成对乘法和 RAM 作对照，另与独立整数卷积比较。
+当前完整上游回归已包含原版量化、AXIS 和 CSR；DMA/SoC 接入及完整 YOLOX 调度仍未完成。

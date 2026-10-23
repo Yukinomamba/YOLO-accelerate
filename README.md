@@ -2,13 +2,25 @@
 
 RISC-V 控制的静态图像目标检测加速器。电脑传入图片，软核调度 FPGA 卷积计算，
 再返回类别、置信度与检测框。当前以 **YOLOX-Tiny 为主、Nano 为备选**，
-采用 **adamgallas 的 128 MAC 卷积后端移植**，不使用摄像头。
+当前硬件主线采用 **adamgallas 原始 576 路 INT8 卷积数据通路**，不使用摄像头。
 
 本仓库独立开发；不修改上级三个文档、任何 `AGENTS.md` 或 `hgb-aisystem_riscv`。
-当前分支为 `fpga/npu128-bringup`；原图片仿真固定在
+当前分支为 `fpga/adam-upstream-faithful`；128 MAC 实现保留在 `fpga/npu128-bringup`。
+原图片仿真固定在
 `baseline/adam128-image-cosim-20261023`（`658b547`）。
 
-## 已完成与下一步
+## 当前上游移植
+
+`rtl/upstream/adam_upstream.sv` 直接例化原 `Accel_Conv`，保留全部 50 个上游 RTL 文件的
+原始字节、参数、寄存器接口、行缓存、576 路乘法、加法树和 18 位累加/量化。
+软件适配原接口的数据布局和任务顺序，见 [上游移植说明](docs/UPSTREAM.md)。
+Verilator 已通过原 CSR/AXIS 端到端卷积：24 帧、186,144 个输出值，覆盖六种行宽、
+8/16 输入通道、原版回绕/饱和及 ReLU/查表。`make test` 运行此项测试。
+完整上游的 PDS 综合尚未完成：1/2 GiB 配额边界附近退出，3 GiB 尝试被内存预检拦下；
+暂没有本版本的资源或时序结果，详见 [综合尝试记录](reports/upstream-synthesis-attempts.json)。
+这条路径尚未接入完整 YOLOX 图片推理或 RISC-V SoC；原图片命令仍使用下述 128 MAC 参考。
+
+## 128 MAC 参考实现
 
 2026-10-23：已完成 8 输入通道×16 输出通道的 128 MAC 后端与 Verilator 验证。
 上游 27×18 打包乘法已改为两路 signed 8×8，四拍延迟与全部输入组合逐项一致；
@@ -64,7 +76,8 @@ PYTHONPATH=build/python-deps make image-detect TORCH_PYTHON=python \
 见 [图片仿真说明](docs/IMAGE_SIM.md) 和 [验证记录](reports/image-cosim-validation.json)。
 下面的依赖准备部分适用于首次运行。
 
-RTL 测试需要 Python 3、Verilator 5.052（使用 JSON 展开检查）和 g++：
+当前上游回归需要 Python 3、Verilator 5.052（使用 JSON 展开检查）、g++，
+以及用于 ABI 检查的 `riscv64-unknown-elf-gcc`（`-march=rv32im -mabi=ilp32`）：
 
 ```bash
 make lint
@@ -73,8 +86,9 @@ make test
 python3 tb/check_memory_guard.py
 ```
 
-当前回归默认日志位于 `build/adam128/` 和 `build/npu128/`；
-`make npu-test` 可单独执行新增 NPU 测试，详细结果见 [NPU 说明](docs/NPU.md)。
+当前上游回归默认日志位于 `build/upstream-faithful/verified/`。
+`make adam-test npu-test` 可执行旧后端测试，日志位于 `build/adam128/` 和 `build/npu128/`，
+旧后端结果见 [NPU 说明](docs/NPU.md)。
 构建固定 `-j1`，只使用一个 CPU，设进程地址空间上限和自身进程组 RSS 监测；默认不生成波形。
 超过内存/时间阈值只终止本次子进程组，不操作 hgb/PDS。
 `make tile-test` 单独执行旧矩阵 tile 回归。`make clean` 仅删除仿真构建，保留源码、权重与模型分析。
@@ -112,6 +126,8 @@ PYTHONPATH=build/python-deps python tools/reference_detect.py \
 
 ## 文件
 
+- `rtl/upstream/`：原始完整加速器的参数/端口透传封装，当前硬件主线。
+- `software/`：原生寄存器 ABI、任务发起与输入/权重/bias 打包，整数 C 接口。
 - `rtl/adam/`：当前 128 MAC 卷积后端；`rtl/systolic*` 为原有矩阵参考。
 - `rtl/npu/`：定点后处理、NPU 封装和独立测量顶层。
 - `third_party/adamgallas/`：固定版本的上游原样源码、许可证与逐文件哈希。

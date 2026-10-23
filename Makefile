@@ -10,11 +10,17 @@ SIZE ?= 416
 ADAM_RTL = rtl/adam/adam_mul_pair.sv rtl/adam/adam_sdp_ram.sv rtl/adam/adam_mac128.sv rtl/adam/adam_conv128.sv
 NPU_RTL = $(ADAM_RTL) rtl/npu/npu_postprocess.sv rtl/npu/npu_conv128.sv rtl/npu/npu_measure_top.sv
 
-.PHONY: test lint adam-test adam-lint npu-test npu-lint tile-test audit audit-both image-sim image-test image-detect clean
+.PHONY: test lint upstream-test upstream-lint adam-test adam-lint npu-test npu-lint tile-test audit audit-both image-sim image-test image-detect clean
 .NOTPARALLEL: test lint
-test: adam-test npu-test
+test: upstream-test
 
-lint: adam-lint npu-lint
+upstream-test:
+	$(PYTHON) tools/run_upstream_tests.py
+
+lint: upstream-lint
+
+upstream-lint:
+	$(PYTHON) tools/run_guarded.py --rss-mib 2048 --as-mib 3072 --min-available-mib 6144 --log build/upstream-faithful/lint.log --metrics build/upstream-faithful/lint.metrics.json -- $(VERILATOR) --lint-only -Wall -Wno-fatal --top-module adam_upstream rtl/upstream/adam_upstream.sv $(wildcard third_party/adamgallas/source/*.v)
 
 npu-test:
 	$(PYTHON) tools/run_npu_tests.py --verilator $(VERILATOR) --build-dir $(NPU_BUILD)

@@ -3,14 +3,18 @@ param(
     [Parameter(Mandatory=$true)][string]$ProjectRoot,
     [string]$PdsHome = $env:PDS_HOME,
     [ValidateRange(1,4)][int]$JobLimitGiB = 4,
-    [ValidateRange(6,64)][int]$ReserveGiB = 6,
+    [ValidateRange(4,64)][int]$ReserveGiB = 6,
     [ValidateRange(60,3600)][int]$TimeoutSeconds = 1800
 )
 $ErrorActionPreference = 'Stop'
 $root = [IO.Path]::GetFullPath($ProjectRoot)
 if ($root.StartsWith('\\') -or $root -match '[{}"\r\n]') { throw 'Use a native Windows project path.' }
 $manifest = Get-Content -Raw -LiteralPath (Join-Path $root 'manifest.json') | ConvertFrom-Json
-if ($manifest.schema -ne 'npu128-pango-synthesis-v1') { throw 'Unexpected manifest.' }
+if ($manifest.schema -notin @('npu128-pango-synthesis-v1', 'adam-upstream-pango-v1')) { throw 'Unexpected manifest.' }
+$projectName = 'npu128_post'
+if ($manifest.schema -eq 'adam-upstream-pango-v1') { $projectName = 'adam_upstream' }
+$topName = $manifest.top
+if ($topName -notmatch '^[A-Za-z_][A-Za-z_0-9]*$') { throw 'Invalid top module.' }
 foreach ($file in $manifest.files.PSObject.Properties) {
     $path = [IO.Path]::GetFullPath((Join-Path $root $file.Name))
     if (-not $path.StartsWith($root.TrimEnd('\')+'\', [StringComparison]::OrdinalIgnoreCase)) {
@@ -23,7 +27,7 @@ foreach ($file in $manifest.files.PSObject.Properties) {
 if ([string]::IsNullOrWhiteSpace($PdsHome)) { throw 'Set PDS_HOME or pass -PdsHome.' }
 $exe = Join-Path $PdsHome 'bin\pds_shell.exe'
 if (-not (Test-Path -LiteralPath $exe)) { throw 'Missing pds_shell.exe.' }
-foreach ($name in @('npu128_post.pds', 'synthesis.log', 'guard.json', 'guard-samples.jsonl')) {
+foreach ($name in @("$projectName.pds", 'synthesis.log', 'guard.json', 'guard-samples.jsonl')) {
     if (Test-Path -LiteralPath (Join-Path $root $name)) { throw "Preserve existing $name; stage a fresh project." }
 }
 $running = @(Get-CimInstance Win32_Process | Where-Object {
@@ -51,7 +55,7 @@ $env:OMP_NUM_THREADS = '1'
 $env:OPENBLAS_NUM_THREADS = '1'
 $env:MKL_NUM_THREADS = '1'
 Add-Type -Path (Join-Path $root 'tools\pango\GuardedJob.cs')
-$command = '-work_dir "'+$root+'" -project_name npu128_post -file "'+(Join-Path $root 'synthesize.tcl')+'"'
+$command = '-work_dir "'+$root+'" -project_name '+$projectName+' -file "'+(Join-Path $root 'synthesize.tcl')+'"'
 $receipt = [ordered]@{ status = 'running'; before = $before; job_limit_bytes = [uint64]($JobLimitGiB*1GB);
     reserve_bytes = [uint64]($ReserveGiB*1GB); timeout_seconds = $TimeoutSeconds;
     command = ('"'+$exe+'" '+$command); manifest_sha256 = (Get-FileHash (Join-Path $root 'manifest.json')).Hash.ToLowerInvariant();
@@ -83,7 +87,7 @@ try {
     if ($log -notmatch '(?m)^Executing : synthesize[^\r\n]* successfully\.') {
         throw 'PDS completion marker absent; synthesis not accepted.'
     }
-    if (-not (Test-Path -LiteralPath (Join-Path $root 'prj_tasks\syn_1\synthesize\npu_measure_top_syn.vm'))) {
+    if (-not (Test-Path -LiteralPath (Join-Path $root "prj_tasks\syn_1\synthesize\${topName}_syn.vm"))) {
         throw 'Mapped netlist absent; synthesis not accepted.'
     }
     $receipt.status = 'PASS'
