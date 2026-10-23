@@ -5,9 +5,13 @@ RISC-V 控制的静态图像目标检测加速器。电脑传入图片，软核�
 当前硬件主线采用 **adamgallas 原始 576 路 INT8 卷积数据通路**，不使用摄像头。
 
 本仓库独立开发；不修改上级三个文档、任何 `AGENTS.md` 或 `hgb-aisystem_riscv`。
-当前分支为 `fpga/adam-upstream-faithful`；128 MAC 实现保留在 `fpga/npu128-bringup`。
+共同开发基线为 `main`，当前完整上游实现来自 `fpga/adam-upstream-faithful`；
+128 MAC 实现保留在 `fpga/npu128-bringup`。后续功能从 `main` 新建分支，通过 PR 合入。
 原图片仿真固定在
 `baseline/adam128-image-cosim-20261023`（`658b547`）。
+
+仓库保留根目录的 [MIT License](LICENSE)。第三方代码继续保留各自许可证，
+其中 adamgallas 源码的 Apache-2.0 许可见 [第三方 LICENSE](third_party/adamgallas/LICENSE)。
 
 接手开发先读 [交接文档](docs/HANDOFF.md)：源码来源与版本边界、完整卷积架构、RV32IM/RT-Thread
 分工、DMA 与计算重叠的条件、已有验证和后续顺序。本次剩余综合、布局布线与上板工作暂缓。
