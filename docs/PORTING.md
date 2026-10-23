@@ -1,15 +1,16 @@
 # 静态图像 YOLO 移植评估
 
-核对日期：2026-10-23。结论：**YOLOX-Nano 可以作为本项目的移植目标；采用软核调度、
-INT8 卷积加速、DDR 存放模型与特征的路线。当前完成软件参考和矩阵 tile 验证，
-完整推理与板级可行性仍需后续实现和测量。**
+核对日期：2026-10-23。当前选择 **YOLOX-Tiny 为主、Nano 为备选**，采用软核调度、
+INT8 卷积加速、DDR 存放模型与特征的路线。板卡容量、候选资源证据和排序见
+[选型报告](ACCELERATOR_SELECTION.md)。本文保留赛题、接口、数值约束和原有矩阵 tile 契约。
+完整推理与板级可行性仍需后续实现和测量。
 
 ## 赛题与已有工程
 
 已阅读上级 `HANDOVER.md`、`OPTIMIZATION_PLAN.md`、`ITERATIONS.md` 的当前进展、
-B19/B20 及 Flash/NPU/DDR 规划。文档中的 `0501f10` 是 P1+P2 集成点；现场只读核对时，
-hgb 已在 `soc/p2-p3-clock-study`，HEAD 仍为 `0501f10ad5c8be843591318c608544d270f0e59a`，
-有正在进行的 P2/P3 修改。本仓库不接管这些改动，不将旧 P0 的物理结果用于估算当前剩余资源。
+B19/B20 及 Flash/NPU/DDR 规划。`0501f10` 是 P1+P2 集成点；最新只读核对时，
+hgb 为 `soc/p2-p3-clock-study@e088a9d`，生产 RTL 提交为 `1a4f8fa`。
+当前组合尚无 PDS 结果，不将旧 P0 的物理结果用于估算当前剩余资源。
 
 本地 `紫光.pdf` 的选题一，高阶任务第 3 项位于 PDF 第 10 页、印刷第 8 页：
 要求 RISC-V、边缘 AI 加速、移植 YOLO 或轻量大模型，并“融合一种或者多种传感器或者显示设备”。
@@ -22,37 +23,20 @@ hgb 已在 `soc/p2-p3-clock-study`，HEAD 仍为 `0501f10ad5c8be843591318c608544
 
 PDF 的盘古 676 平台有 100K/200K 型号；本地 Pango 脚本选择
 `PG2L200H-6IFBB676`。PDF 型号文字与工程封装字符串不同，最终以实物、器件手册及
-PDS 库为准。本次没有用型号名称推算可用 APM/DRM，也没有运行 PDS。
+PDS 库为准。200HP 手册的 LUT6/APM/DRM、Flash 和 DDR 数据已补入选型报告；没有运行 PDS。
 
-## GitHub 候选
+## 当前选型
 
-模型表采用各官方项目发布的数据，输入尺寸不同，不能据此直接比较相同任务下的精度。
-MAC 计数与 FLOPs 的计算口径也应分别保留。
+模型以官方 YOLOX-Tiny 为主，首轮移植候选为 adamgallas 的已验证 FPGA 卷积核，
+FIE 次选，小配置 NVDLA 保留。详细证据、资源门槛、tiny 系列仓库消歧和算子差异见
+[选型报告](ACCELERATOR_SELECTION.md)。已有自研 tile 保留作独立算术参考，
+不把矩阵仿真成功作为选定完整加速器的依据。后续导入第三方代码时固定提交并保留许可。
 
-| 模型 | 官方输入、参数、COCO AP50:95 | 工程判断 |
-| --- | --- | --- |
-| [YOLOX-Nano](https://github.com/Megvii-BaseDetection/YOLOX) | 416；0.91M；25.8；1.08 GFLOPs | 首选；模型较小、官方权重和导出路径完整，Apache-2.0；需支持深度卷积和 SiLU |
-| [YOLOv5n](https://github.com/ultralytics/yolov5) | 640；1.9M；28.0；4.5 GFLOPs | 备选；普通卷积适合阵列，生态成熟；固定 legacy YOLOv5n，不能混入新版 YOLOv5u；当前仓库显示 AGPL-3.0 |
-| [YOLOX-Tiny](https://github.com/Megvii-BaseDetection/YOLOX) | 416；5.06M；32.8；6.45 GFLOPs | 精度更高，但首轮所需权重和计算更多 |
-
-检索时 YOLOX 页面约 10.7k stars，且已有多种官方部署入口，可作为社区采用程度的参考；
-选择依据仍是公开评测、算子规模与实际可复现性。单张 dog.jpg 成功不代表 COCO 精度复测。
-
-| 开源加速器/工程 | 可复用的内容 | 接入当前紫光软核的代价与选择 |
-| --- | --- | --- |
-| [Gemmini](https://github.com/ucb-bar/gemmini) | 脉动阵列、scratchpad、DMA、软件调度设计 | RoCC 自定义指令、Rocket/BOOM 与 Chipyard 耦合；当前 Core 没有该接口。参考数据流，本轮不整套移植 |
-| [NVDLA](https://github.com/nvdla/hw) | CNN 硬件管线、模型/驱动分层 | 默认 nvdlav1 为 2048 个 INT8 MAC 的固定配置；另有可配置路线，不能一概判断放不下。仍需检查 SRAM、总线、编译器和 YOLOX 算子覆盖，暂不作为第一版 |
-| [adamgallas/fpga_accelerator_yolov3tiny](https://github.com/adamgallas/fpga_accelerator_yolov3tiny) | INT8、纯 Verilog 卷积、查表激活与软件调度 | 以 Zynq/Vivado/Vitis 为目标；DDR 搬运依赖 Xilinx AXI DMA。作者明确已停止维护，其他模型移植困难；可研究取数/量化，不能照搬工程或资源数字 |
-| [Zero0Hero/yolo_e203_fpga](https://github.com/Zero0Hero/yolo_e203_fpga) | RISC-V E203 加 YOLO、上位机和软硬件协作 | xc7k325 与 HLS 工程，需替换厂商依赖并审计来源/许可；可参考整体流程，当前未导入代码 |
-
-推荐移植官方模型及其权重，自行实现小型、厂商无关的 SystemVerilog 卷积后端。
-本仓库 RTL 是新实现，未复制上述加速器源码，未宣称兼容其指令集。
-后续若引入第三方代码，固定提交、保留对应许可与来源；不直接将整个上游工程并入 hgb。
-
-## 本次实际分析
+## 原有 Nano 软件参考
 
 上游固定为 `6ddff4824372906469a7fae2dc3206c7aa4bbaee`。
-`tools/audit_yolox.py` 实例化官方 Nano 配置，CPU eval 前向并按 Conv2d 的实际输出形状计数。
+`tools/audit_yolox.py` 现支持 Nano/Tiny，CPU eval 前向并按 Conv2d 的实际输出形状计数。
+以下保留首次 Nano 分析；Tiny 与对比结果在 `reports/model-comparison.json`。
 训练损失模块虽然出现在模块清单中，不进入推理算子清单；函数形式的 Add/Concat/Sigmoid
 不能只靠模块数量判断是否存在，仍按上游 `network_blocks.py`、`yolo_head.py` 核对。
 
@@ -72,7 +56,8 @@ MAC 计数与 FLOPs 的计算口径也应分别保留。
 部分和需做生命周期分配，不能按“两张特征图”直接得出 DDR 峰值。
 
 1×1 占卷积 MAC 的 82.117%，深度卷积占 3.577%，两种尺寸比例相同。
-建议阵列先做 1×1；3×3 普通卷积由分块窗口取数生成 GEMM 输入，不在 DDR 中完整展开 im2col。
+这说明原有 Nano 路线重点在 1×1。当前 Tiny 的普通空间卷积占主要计算量，选核与取数
+应同时覆盖 1×1 和 3×3，避免在 DDR 中完整展开 im2col。
 深度卷积避免转成大量零元素的稠密矩阵，后续使用逐通道并行 MAC 或专门的 lane 模式。
 
 预训练权重在官方 `assets/dog.jpg` 上完成 CPU FP32 推理，阈值 0.25、NMS IoU 0.45：
@@ -156,13 +141,13 @@ TCM 保留给控制、栈和中断，不将完整模型/大特征挤入 64 KiB D
 实测；先用 115200 建链，再提速。单张静态演示可以等待传输，连续测试性能时应将图像
 预装 DDR，单独测推理，报告时也必须给出含 UART 的端到端延迟。
 
-候选先评估 4×4/8×8 INT8 阵列（16/64 个 MAC）；每 MAC 的 APM 映射由 PDS 决定。
-以假设 100 MHz、64 MAC 每拍全利用为例，416 的全部卷积 MAC 算术下界约 81.65 ms，
+候选先评估 64/128 MAC，再按资源检查决定是否增加到 256；APM 映射由 PDS 决定。
+以假设 100 MHz、64 MAC 每拍全利用为例，416 的 Nano/Tiny 纯卷积下界约 81.65/500.98 ms，
 它忽略填排、深度卷积利用率、DDR、激活和软核处理，不能写成实测帧率或时序承诺。
 目前没有该模块的 APM/LUT/DRM 消耗与 Fmax；必须在当前 SoC 同源配置下测量资源余量。
 
-初版片上存储可从输入/权重各两块 8 KiB、累加 8 KiB 的约 40 KiB 预算起步，
-随后按层形状调整 banking 和端口数。这是方案预算，尚未实现 RAM；完整活跃特征放 DDR。
+原有自研 tile 曾按约 40 KiB 设计小缓存预算，尚未实现 RAM。引入现成卷积核后，
+按其取数和端口要求重新分配片上缓存，不套用这项旧预算；完整活跃特征放 DDR。
 不复用现有 CoreMark 固定工作区地址，未来由固件分配不重叠的模型/输入/输出区域。
 
 ## 本版 RTL 契约与验证
@@ -193,8 +178,9 @@ K=0 时 `cmd_ready=0`，调用者必须报错，不能一直等待非法任务�
 
 | 检查点 | 开发内容 | 进入下一步的条件 |
 | --- | --- | --- |
+| 0：候选适配 | 对照上游核的打包乘法、位宽、RAM/SRL 和流水契约；Pango 单核综合 | 算术/缓存对比通过，达到选型报告资源门槛后推进完整移植 |
 | 1：数值参考 | 固定 416 官方精度基线；320 作为降负载候选；BN 折叠、INT8 校准与逐层整数模型 | 同一验证集报告 FP32/INT8 AP 与误差，讨论可接受降幅；不可沿用 416 的 AP 标注 320 |
-| 2：完整算子 | 分块取数、1×1/3×3/深度卷积、bias/requant/SiLU/SPP/Add/Resize | 边界尺寸、padding、溢出与随机背压逐层对比，最终检测框对齐 |
+| 2：完整算子 | Tiny 分块取数、1×1/3×3/stride-2、bias/requant/SiLU/SPP/Add/Resize；Nano 才需深度卷积 | 边界尺寸、padding、溢出与随机背压逐层对比，最终检测框对齐 |
 | 3：独立设备 | banked SRAM、描述符、AXI 主口、控制口、轮询驱动 | 存储模型下背压/错误/4KiB burst/复位通过，记录搬运与计算周期 |
 | 4：静态图像链路 | 分包协议、固件、PC 发图和结果显示 | CRC/超时/重复包验证，通过多张图片；软核+NPU 完整推理 |
 | 5：受控集成 | 待 hgb P2/P3 接口稳定并获得后续集成授权，再接实际 SoC | 当前双宽功能、Cache 移交、后台带宽；PDS 资源/时序；最后板级与显示 |

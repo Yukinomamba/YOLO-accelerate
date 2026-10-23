@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Profile the pinned official Nano graph on CPU; no weights or accuracy claim."""
+"""Profile a pinned official Nano/Tiny graph on CPU; no accuracy claim."""
 import argparse
 from collections import Counter
 import hashlib
@@ -15,6 +15,7 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument('--source', type=Path, required=True)
     p.add_argument('--output', type=Path, required=True)
+    p.add_argument('--model', choices=['yolox-nano', 'yolox-tiny'], default='yolox-nano')
     args = p.parse_args()
     source = args.source.resolve()
     commit = subprocess.check_output(['git', '-C', str(source), 'rev-parse', 'HEAD'], text=True).strip()
@@ -27,7 +28,7 @@ def main():
     from yolox.exp import get_exp
     torch.set_num_threads(2)
     torch.manual_seed(20261023)
-    model = get_exp(None, 'yolox-nano').get_model().eval()
+    model = get_exp(None, args.model).get_model().eval()
     model.head.decode_in_inference = False
     profiles = []
     for size in [320, 416]:
@@ -59,14 +60,18 @@ def main():
                          'conv_macs_by_kind': dict(macs),
                          'largest_conv_output_elements': max(torch.tensor(x['output']).prod().item() for x in records),
                          'layers': records})
-    source_files = ['exps/default/yolox_nano.py', 'yolox/models/network_blocks.py',
+    source_files = [f'exps/default/{args.model.replace("-", "_")}.py',
+                    'yolox/exp/yolox_base.py', 'yolox/exp/build.py', 'yolox/models/yolox.py',
+                    'yolox/models/network_blocks.py',
                     'yolox/models/yolo_head.py', 'yolox/models/yolo_pafpn.py',
                     'yolox/models/darknet.py', 'yolox/data/data_augment.py']
     report = {'upstream': 'https://github.com/Megvii-BaseDetection/YOLOX',
+              'model': args.model,
               'commit': commit, 'torch': torch.__version__,
               'mode': 'CPU eval, synthetic zeros, random weights; shape/MAC audit only',
               'parameters': sum(x.numel() for x in model.parameters()),
               'conv_weight_elements': sum(m.weight.numel() for m in model.modules() if isinstance(m, torch.nn.Conv2d)),
+              'conv_output_channels_sum': sum(m.out_channels for m in model.modules() if isinstance(m, torch.nn.Conv2d)),
               'module_counts': dict(Counter(type(m).__name__ for m in model.modules())),
               'source_sha256': {f: hashlib.sha256((source/f).read_bytes()).hexdigest() for f in source_files},
               'profiles': profiles}

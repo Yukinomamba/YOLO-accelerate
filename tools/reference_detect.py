@@ -18,6 +18,7 @@ def main():
     p.add_argument('--image', type=Path, required=True)
     p.add_argument('--output', type=Path, required=True)
     p.add_argument('--size', type=int, choices=[320, 416], default=416)
+    p.add_argument('--model', choices=['yolox-nano', 'yolox-tiny'], default='yolox-nano')
     args = p.parse_args()
     source = args.source.resolve()
     if subprocess.check_output(['git', '-C', str(source), 'rev-parse', 'HEAD'], text=True).strip() != PIN:
@@ -37,7 +38,7 @@ def main():
     if image is None:
         p.error('cannot decode image')
     torch.set_num_threads(2)
-    model = get_exp(None, 'yolox-nano').get_model().eval()
+    model = get_exp(None, args.model).get_model().eval()
     checkpoint = torch.load(args.weights, map_location='cpu', weights_only=True)
     model.load_state_dict(checkpoint['model'], strict=True)
     tensor, ratio = preproc.preproc(image, (args.size, args.size))
@@ -50,6 +51,7 @@ def main():
             detections.append({'class_id': int(row[6]), 'score': row[4]*row[5],
                                'xyxy_original': [x/ratio for x in row[:4]]})
     result = {'mode': 'PC CPU FP32 reference only; no FPGA or INT8 execution',
+              'model': args.model,
               'upstream_commit': PIN, 'weights_sha256': hashlib.sha256(args.weights.read_bytes()).hexdigest(),
               'image_sha256': hashlib.sha256(args.image.read_bytes()).hexdigest(),
               'torch': torch.__version__, 'opencv': cv2.__version__,

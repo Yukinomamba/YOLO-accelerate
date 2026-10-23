@@ -1,0 +1,49 @@
+{
+  "review_date": "2026-10-23",
+  "reference_root_env": "PDS_WORK_ROOT",
+  "manual": "reference/1_Demo_document/实验例程说明篇/MES2L676-200HP硬件使用手册_v1.2.pdf",
+  "manual_pdf_pages": {
+    "device_resources": 10,
+    "ddr": 14,
+    "flash": 17,
+    "flash_pins": 18
+  },
+  "device": "PG2L200H-6IFBB676",
+  "capacity": {
+    "lut6": 159800,
+    "flip_flops": 319600,
+    "drm36k": 415,
+    "drm_bits": 15298560,
+    "apm_25x18": 740,
+    "external_qspi_chips": 2,
+    "external_qspi_bytes_per_chip": 16777216,
+    "external_ddr_bytes": 1073741824
+  },
+  "historical_p1_synthesis_documented_only": {
+    "source": "../hgb-aisystem_riscv/docs/fpga/FPGA_ADAPTATION.md",
+    "profile": "P1.3 ROB32/int8/mem4; not the current P1+P2+P3 build",
+    "lut": 57437,
+    "flip_flops": 41497,
+    "drm": 36,
+    "apm": 4,
+    "current_combined_pds_report_available": false
+  },
+  "engineering_targets_not_measurements": {
+    "existing_system_lut6_reserved": 79900,
+    "npu_lut6_ceiling": 40000,
+    "new_dma_csr_clock_lut6_reserved": 10000,
+    "remaining_lut6_margin": 29900,
+    "npu_drm36k_ceiling": 160,
+    "npu_apm_ceiling": 640,
+    "initial_clock_scenario_mhz": 100
+  },
+  "limits": [
+    "Two QSPI chips are board storage, not 32 MiB of on-die Flash.",
+    "Configuration bitstream, dual-quad mode and firmware partitions reduce available model space.",
+    "Do not assume the second Flash is entirely free or exposed as contiguous CPU memory.",
+    "The current hgb default DDR address window is 512 MiB; physical capacity is 1 GiB.",
+    "Xilinx DSP48/BRAM/LUT and Intel ALM counts are not Pango implementation results.",
+    "P1 synthesis counts do not establish the latest integrated system's physical resource margin."
+  ],
+  "manual_sha256": "b045d4a3bb436a5ccd499d107081b4de0da26f84c19ff20bfe53e4c4d66d9e4c"
+}

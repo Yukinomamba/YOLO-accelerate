@@ -1,0 +1,181 @@
+{
+  "date": "2026-10-23",
+  "selection": "YOLOX-Tiny primary; Nano fallback; first accelerator port candidate adam-yolov3tiny, contingent on Pango arithmetic, resource and protocol verification",
+  "excluded_by_user": [
+    "CNN_FPGA"
+  ],
+  "tiny_search_policy": "highest stars among matching tiny TPU/NPU repositories located in GitHub search; stars are a dated snapshot, not FPGA validation",
+  "candidates": [
+    {
+      "id": "adam-yolov3tiny",
+      "repository": "adamgallas/fpga_accelerator_yolov3tiny",
+      "commit": "6ba312bd220e67a987d3417bacd030db30b15770",
+      "rank": 1,
+      "license": "Apache-2.0",
+      "evidence": "author FPGA demonstration; checked-in Vivado accelerator synthesis report",
+      "risks": [
+        "27x18 packed multiplier versus Pango 25x18 APM",
+        "substantial LUT RAM/SRL use",
+        "YOLOX scheduling, stride-2 and SPP operators require porting"
+      ]
+    },
+    {
+      "id": "fie",
+      "repository": "hawkcl/flexible-inference-engine",
+      "commit": "0d04a83d38961e1e52327ed930167c7af5404f99",
+      "rank": 2,
+      "license": "MIT",
+      "evidence": "author AX7Z100 YOLOv3-tiny demonstration and VC707 RISC-V flow",
+      "risks": [
+        "20-bit saturating accumulation",
+        "two original DDR paths",
+        "no quantitative Pango resource/performance evidence"
+      ]
+    },
+    {
+      "id": "nvdla-fpga64",
+      "repository": "SameLight/ITRI-OpenDLA",
+      "commit": "5b8a4e12789b6ad246e58e1fd402d710a748a53b",
+      "rank": 3,
+      "license": "MIT repository; preserve upstream NVIDIA headers",
+      "evidence": "ZCU102/ZCU104 bitstreams and ResNet/Tiny-YOLO test data",
+      "risks": [
+        "64 MAC throughput",
+        "published model translation tools are not included",
+        "uint8 arithmetic modifications must match runtime"
+      ]
+    },
+    {
+      "id": "nvdla",
+      "repository": "nvdla/hw",
+      "commit": "1a65f1f5b48268accaa47c95f95c2601918be095",
+      "license": "NVIDIA Open NVDLA License",
+      "configs": [
+        "nv_small",
+        "nv_small_256",
+        "nv_small_256_full"
+      ],
+      "evidence": "official parameterized specifications and separate AWS FPGA platform",
+      "risks": [
+        "nv_small and nv_small_256 disable SDP LUT and EW",
+        "ASIC SRAM and clock wrapper adaptation",
+        "no direct YOLOX compiler coverage claim"
+      ]
+    },
+    {
+      "id": "slack",
+      "repository": "M-Lastovka/SLACK_FPGA_CNN",
+      "commit": "3281d414678dd831220b6dd042fa766e4ae2bc76",
+      "license": "no LICENSE found in inspected tree",
+      "evidence": "Vivado sources, Python compiler and testbenches; README system/bitstream sections TODO",
+      "risks": [
+        "default 18-bit fixed point",
+        "Xilinx DSP macros and UltraRAM wrapper",
+        "board resource/performance evidence insufficient"
+      ]
+    },
+    {
+      "id": "tiny-tpu",
+      "repository": "tiny-tpu-v2/tiny-tpu",
+      "commit": "04ad69238072369ac3b5c43c495a3124b62a95aa",
+      "stars_snapshot": 1403,
+      "license": "no LICENSE found in inspected tree",
+      "evidence": "DE1-SoC MNIST serial fitter and timing summaries; two-layer MLP through Tiny-TPU",
+      "risks": [
+        "Q8.8 and 2-wide tiled demo is not YOLO",
+        "convolution/DMA/runtime port still needed"
+      ]
+    },
+    {
+      "id": "tiny-npu",
+      "repository": "harishsg993010/tiny-NPU",
+      "stars_snapshot": 283,
+      "license": "no standard LICENSE identified",
+      "evidence": "simulation and resource estimates; FPGA synthesis/demo unchecked in README",
+      "risks": [
+        "no verified board resource numbers"
+      ],
+      "commit": "8216c22b762011aa20c05fc2768423fd12dda59d"
+    },
+    {
+      "id": "tpu-sv",
+      "repository": "kagandikmen/TPU.sv",
+      "license": "MIT",
+      "evidence": "README simulation milestones; actual hardware evaluation listed as next step",
+      "risks": [
+        "no FPGA ML workload result"
+      ],
+      "commit": "82b1dc9a0e3322bcec69238633265c91ef20dac1"
+    }
+  ],
+  "evidence": [
+    {
+      "repository": "adamgallas/fpga_accelerator_yolov3tiny",
+      "path": "vivado_prj/base.runs/cam_Accel_Conv_0_0_synth_1/cam_Accel_Conv_0_0_utilization_synth.rpt",
+      "git_blob_sha": "a5d2eddc0f4747f6ab1c20ffc8564a5b0f25e1b7",
+      "url": "https://github.com/adamgallas/fpga_accelerator_yolov3tiny/blob/main/vivado_prj/base.runs/cam_Accel_Conv_0_0_synth_1/cam_Accel_Conv_0_0_utilization_synth.rpt"
+    },
+    {
+      "repository": "adamgallas/fpga_accelerator_yolov3tiny",
+      "path": "vivado_prj/source/cal_mul_int8_x2_dsp.v",
+      "git_blob_sha": "a584e8f47b2533e642a51b85e8855a8db54d2e1d",
+      "url": "https://github.com/adamgallas/fpga_accelerator_yolov3tiny/blob/main/vivado_prj/source/cal_mul_int8_x2_dsp.v"
+    },
+    {
+      "repository": "adamgallas/fpga_accelerator_yolov3tiny",
+      "path": "vivado_prj/source/cal_mul_int8_x2.v",
+      "git_blob_sha": "b4ed1f603d8b28ec80785389029f41067314b9f1",
+      "url": "https://github.com/adamgallas/fpga_accelerator_yolov3tiny/blob/main/vivado_prj/source/cal_mul_int8_x2.v"
+    },
+    {
+      "repository": "tiny-tpu-v2/tiny-tpu",
+      "path": "mnist_demo/artifacts/quartus/serial/de1_soc_mnist_serial_top.fit.summary",
+      "git_blob_sha": "2c1dc7e9b7b63948346b093f9157b5d3de2750e8",
+      "url": "https://github.com/tiny-tpu-v2/tiny-tpu/blob/main/mnist_demo/artifacts/quartus/serial/de1_soc_mnist_serial_top.fit.summary"
+    },
+    {
+      "repository": "tiny-tpu-v2/tiny-tpu",
+      "path": "mnist_demo/artifacts/quartus/serial/de1_soc_mnist_serial_top.sta.summary",
+      "git_blob_sha": "2226530f29382d8630a0df72ef39f6141e49395d",
+      "url": "https://github.com/tiny-tpu-v2/tiny-tpu/blob/main/mnist_demo/artifacts/quartus/serial/de1_soc_mnist_serial_top.sta.summary"
+    },
+    {
+      "repository": "hawkcl/flexible-inference-engine",
+      "path": "AIFPGA/sv/sv.srcs/sources_1/new/UCL.sv",
+      "git_blob_sha": "73d91e27f582850a8415b48671d5891114bcd304",
+      "url": "https://github.com/hawkcl/flexible-inference-engine/blob/main/AIFPGA/sv/sv.srcs/sources_1/new/UCL.sv"
+    },
+    {
+      "repository": "SameLight/ITRI-OpenDLA",
+      "path": "FPGA_RTL_nvsmall64/README.md",
+      "git_blob_sha": "c8a8fde3596b0d68210dd4d947b4b86d15fce471",
+      "url": "https://github.com/SameLight/ITRI-OpenDLA/blob/master/FPGA_RTL_nvsmall64/README.md"
+    },
+    {
+      "repository": "nvdla/hw",
+      "path": "spec/defs/nv_small.spec",
+      "git_blob_sha": "b72e6bdf097657a2b5c12d8dbc29a56908a1e7eb",
+      "url": "https://github.com/nvdla/hw/blob/master/spec/defs/nv_small.spec"
+    },
+    {
+      "repository": "nvdla/hw",
+      "path": "spec/defs/nv_small_256_full.spec",
+      "git_blob_sha": "862d40c516ef8a8c204f9956f9651184406afed2",
+      "url": "https://github.com/nvdla/hw/blob/master/spec/defs/nv_small_256_full.spec"
+    },
+    {
+      "repository": "hawkcl/flexible-inference-engine",
+      "path": "AIFPGA/sv/sv.srcs/sources_1/new/pkg.sv",
+      "git_blob_sha": "e982b013a1c2a395488b1db956effbbdb6980bb6",
+      "sha256": "450664c173edbcfa863070f0c65b6c4ac0d4ab8626308d75af33072ba713125f",
+      "url": "https://github.com/hawkcl/flexible-inference-engine/blob/0d04a83d38961e1e52327ed930167c7af5404f99/AIFPGA/sv/sv.srcs/sources_1/new/pkg.sv"
+    },
+    {
+      "repository": "M-Lastovka/SLACK_FPGA_CNN",
+      "path": "design/rtl_pckg/arith_pckg.sv",
+      "git_blob_sha": "eb77836340994c2911fc719c58566dc302607744",
+      "sha256": "deb2b8491bbdf40a44a0b2a5be891bf96adb2d96e8401f08e930fc7fd6b13806",
+      "url": "https://github.com/M-Lastovka/SLACK_FPGA_CNN/blob/3281d414678dd831220b6dd042fa766e4ae2bc76/design/rtl_pckg/arith_pckg.sv"
+    }
+  ]
+}

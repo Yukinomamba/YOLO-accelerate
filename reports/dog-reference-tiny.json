@@ -1,0 +1,50 @@
+{
+  "mode": "PC CPU FP32 reference only; no FPGA or INT8 execution",
+  "model": "yolox-tiny",
+  "upstream_commit": "6ddff4824372906469a7fae2dc3206c7aa4bbaee",
+  "weights_sha256": "9de513de589ac98bb92d3bca53b5af7b9acfa9b0bacb831f7999d0f7afaee8f0",
+  "image_sha256": "5a9522051c3cec2bbd2f6323fccba32e8fbf3ddcc2b3e2fd46b04c720bc6f866",
+  "torch": "2.14.0+cu126",
+  "opencv": "5.0.0",
+  "input_size": 416,
+  "original_hw": [
+    576,
+    768
+  ],
+  "preprocess": "official non-legacy BGR, top-left resize, pad=114, CHW, no /255",
+  "confidence": 0.25,
+  "nms_iou": 0.45,
+  "class_agnostic_nms": true,
+  "detections": [
+    {
+      "class_id": 1,
+      "score": 0.8874322123030964,
+      "xyxy_original": [
+        124.29685152493991,
+        130.2703575721154,
+        560.6329439603365,
+        418.72603665865387
+      ]
+    },
+    {
+      "class_id": 2,
+      "score": 0.6989613728724038,
+      "xyxy_original": [
+        470.51477050781256,
+        81.27435537484976,
+        688.2638784555289,
+        169.4069542518029
+      ]
+    },
+    {
+      "class_id": 15,
+      "score": 0.5552048025250116,
+      "xyxy_original": [
+        130.9950890174279,
+        218.03602013221155,
+        310.124014047476,
+        540.4740459735577
+      ]
+    }
+  ]
+}

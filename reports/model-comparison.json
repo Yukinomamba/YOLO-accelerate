@@ -1,0 +1,177 @@
+{
+  "models": [
+    {
+      "model": "yolox-nano",
+      "commit": "6ddff4824372906469a7fae2dc3206c7aa4bbaee",
+      "torch": "2.14.0+cu126",
+      "mode": "CPU eval, synthetic zeros, random weights; shape/MAC audit only",
+      "audit_sha256": "b1f3c2b98a5fc612f48a2089c199efc3fe9d16f0e15451b9a656ad178614bc0d",
+      "source_sha256": {
+        "exps/default/yolox_nano.py": "57e5ff392fc1a963d92bc15ef6dac2d8a93092ed3ebf74c8ddbc4495ddd3fb95",
+        "yolox/exp/yolox_base.py": "09044d977cb729f42a4a123f6b37c46a8dfeab7e2cc6ba200cbfec4b883fe73c",
+        "yolox/exp/build.py": "d6a83ddc54b03e5087337acd8f28a67c44d961042146c595b5c5b1bd41b1f2ab",
+        "yolox/models/yolox.py": "9f8eaf76d2c243627e875db9b522cf1cfddc0cdcf229400550f76102cce741e3",
+        "yolox/models/network_blocks.py": "f490240a674799f1b548ac4ca571c7f3e59d4e75efee8ebeb1e24e6e4e10d2a4",
+        "yolox/models/yolo_head.py": "0275bcdeb1b1d5dbd3172fc4897c75cb161f707843983bf582fb087676f969c2",
+        "yolox/models/yolo_pafpn.py": "8571af557f6caacda61e54813be4be2d73c4a0889e1f876ec5586057eb2eebde",
+        "yolox/models/darknet.py": "368c9db45166e863691cf7460b314d047928f90e8744c492a673b6eff9b809f3",
+        "yolox/data/data_augment.py": "f99b0b1568dafde0acd99f0a1e27a33644885349834d55a9dc632fe691ee352d"
+      },
+      "parameters": 912159,
+      "conv_int8_weight_bytes": 896512,
+      "conv_int8_weight_mib": 0.85498046875,
+      "folded_conv_bias_int32_bytes_assumption": 31804,
+      "per_channel_scale_fp32_bytes_assumption": 31804,
+      "profiles": [
+        {
+          "size": 320,
+          "output_shape": [
+            1,
+            2100,
+            85
+          ],
+          "input_u8_bytes": 307200,
+          "conv_macs": 309203200,
+          "conv_macs_by_kind": {
+            "regular_spatial": 44236800,
+            "depthwise": 11059200,
+            "pointwise": 253907200
+          },
+          "largest_conv_output_elements": 409600,
+          "conv_calls": 113,
+          "depthwise_calls": 30,
+          "ideal_conv_ms_at_100mhz": {
+            "64": 48.313,
+            "128": 24.1565,
+            "256": 12.07825
+          },
+          "uart_8n1_payload_seconds": {
+            "115200": 26.666666666666668,
+            "921600": 3.3333333333333335,
+            "3000000": 1.024
+          }
+        },
+        {
+          "size": 416,
+          "output_shape": [
+            1,
+            3549,
+            85
+          ],
+          "input_u8_bytes": 519168,
+          "conv_macs": 522553408,
+          "conv_macs_by_kind": {
+            "regular_spatial": 74760192,
+            "depthwise": 18690048,
+            "pointwise": 429103168
+          },
+          "largest_conv_output_elements": 692224,
+          "conv_calls": 113,
+          "depthwise_calls": 30,
+          "ideal_conv_ms_at_100mhz": {
+            "64": 81.64897,
+            "128": 40.824485,
+            "256": 20.4122425
+          },
+          "uart_8n1_payload_seconds": {
+            "115200": 45.06666666666667,
+            "921600": 5.633333333333334,
+            "3000000": 1.73056
+          }
+        }
+      ]
+    },
+    {
+      "model": "yolox-tiny",
+      "commit": "6ddff4824372906469a7fae2dc3206c7aa4bbaee",
+      "torch": "2.14.0+cu126",
+      "mode": "CPU eval, synthetic zeros, random weights; shape/MAC audit only",
+      "audit_sha256": "9fd6c06f156c92ea98b80dfe50666490e28ccfce5a2912a125d567529fdddcf5",
+      "source_sha256": {
+        "exps/default/yolox_tiny.py": "376c31c2389d519f0526be41894761327b6fba61026a855d6bcf173840a1df56",
+        "yolox/exp/yolox_base.py": "09044d977cb729f42a4a123f6b37c46a8dfeab7e2cc6ba200cbfec4b883fe73c",
+        "yolox/exp/build.py": "d6a83ddc54b03e5087337acd8f28a67c44d961042146c595b5c5b1bd41b1f2ab",
+        "yolox/models/yolox.py": "9f8eaf76d2c243627e875db9b522cf1cfddc0cdcf229400550f76102cce741e3",
+        "yolox/models/network_blocks.py": "f490240a674799f1b548ac4ca571c7f3e59d4e75efee8ebeb1e24e6e4e10d2a4",
+        "yolox/models/yolo_head.py": "0275bcdeb1b1d5dbd3172fc4897c75cb161f707843983bf582fb087676f969c2",
+        "yolox/models/yolo_pafpn.py": "8571af557f6caacda61e54813be4be2d73c4a0889e1f876ec5586057eb2eebde",
+        "yolox/models/darknet.py": "368c9db45166e863691cf7460b314d047928f90e8744c492a673b6eff9b809f3",
+        "yolox/data/data_augment.py": "f99b0b1568dafde0acd99f0a1e27a33644885349834d55a9dc632fe691ee352d"
+      },
+      "parameters": 5055855,
+      "conv_int8_weight_bytes": 5038272,
+      "conv_int8_weight_mib": 4.80487060546875,
+      "folded_conv_bias_int32_bytes_assumption": 35676,
+      "per_channel_scale_fp32_bytes_assumption": 35676,
+      "profiles": [
+        {
+          "size": 320,
+          "output_shape": [
+            1,
+            2100,
+            85
+          ],
+          "input_u8_bytes": 307200,
+          "conv_macs": 1897200000,
+          "conv_macs_by_kind": {
+            "regular_spatial": 1492992000,
+            "pointwise": 404208000
+          },
+          "largest_conv_output_elements": 614400,
+          "conv_calls": 83,
+          "depthwise_calls": 0,
+          "ideal_conv_ms_at_100mhz": {
+            "64": 296.4375,
+            "128": 148.21875,
+            "256": 74.109375
+          },
+          "uart_8n1_payload_seconds": {
+            "115200": 26.666666666666668,
+            "921600": 3.3333333333333335,
+            "3000000": 1.024
+          }
+        },
+        {
+          "size": 416,
+          "output_shape": [
+            1,
+            3549,
+            85
+          ],
+          "input_u8_bytes": 519168,
+          "conv_macs": 3206268000,
+          "conv_macs_by_kind": {
+            "regular_spatial": 2523156480,
+            "pointwise": 683111520
+          },
+          "largest_conv_output_elements": 1038336,
+          "conv_calls": 83,
+          "depthwise_calls": 0,
+          "ideal_conv_ms_at_100mhz": {
+            "64": 500.979375,
+            "128": 250.4896875,
+            "256": 125.24484375
+          },
+          "uart_8n1_payload_seconds": {
+            "115200": 45.06666666666667,
+            "921600": 5.633333333333334,
+            "3000000": 1.73056
+          }
+        }
+      ]
+    }
+  ],
+  "tiny_over_nano_conv_weight_ratio": 5.619860079954312,
+  "tiny_over_nano_conv_mac_ratio_by_size": {
+    "320": 6.135770910520978,
+    "416": 6.135770910520978
+  },
+  "limits": [
+    "Graph profiling uses random weights, not accuracy evaluation.",
+    "INT8 storage is projected before packing, alignment, LUTs and descriptors.",
+    "Largest convolution output is not peak live feature memory.",
+    "Compute bounds assume full MAC utilization; omit DMA, activation and CPU work.",
+    "100 MHz is a scenario, not a Pango timing result.",
+    "UART bounds omit framing, ACKs and retries beyond the 8N1 byte format."
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "date": "2026-10-23",
+  "branch": "research/tiny-fpga-accelerator-selection",
+  "source_base_commit": "a01cd2b11dc39d24ed251150cf16ed8ddda6551a",
+  "script_sha256": {
+    "tools/audit_yolox.py": "1212a1fe7fabdfe4ee6cbf90d095029b46815358246b7b5e23b66a2cd9000f1f",
+    "tools/compare_models.py": "3d080f408fee48fca436947130f7f568c8dc921052d91c431699c30043bd1cd8",
+    "tools/reference_detect.py": "d2b54e3d4ac167dba2620dc0d4b6931a4cdc2d28590b2b3a7c0d1f63bda93610"
+  },
+  "commands": [
+    "PYTHONPATH=build/python-deps make audit-both PYTHON=\"$TORCH_PYTHON\"",
+    "PYTHONPATH=build/python-deps \"$TORCH_PYTHON\" tools/reference_detect.py --source build/upstream/YOLOX --model yolox-tiny --weights build/models/yolox_tiny.pth --image build/upstream/YOLOX/assets/dog.jpg --output build/dog-reference-tiny.json",
+    "PYTHONPATH=build/python-deps \"$TORCH_PYTHON\" tools/reference_detect.py --source build/upstream/YOLOX --weights build/models/yolox_nano.pth --image build/upstream/YOLOX/assets/dog.jpg --output build/dog-reference-nano-recheck.json"
+  ],
+  "environment": "TORCH_PYTHON selects an existing interpreter with torch 2.14.0+cu126 and torchvision; CPU execution only",
+  "checks": {
+    "model_profiles": "PASS: Nano and Tiny, each 320/416; layer MAC sums verified",
+    "tiny_pc_reference": "PASS: 3 detections with strict official checkpoint loading",
+    "nano_compatibility": "PASS: default Nano output equals previous reference after removing new model field",
+    "lut6_budget": "PASS: 79900 + 40000 + 10000 + 29900 = 159800",
+    "python_ast_files": 3,
+    "json_files_checked_before_this_report": 8,
+    "local_markdown_links": 14,
+    "rtl_changes": "none; prior 404-case validation retained, not rerun",
+    "pds": "not run",
+    "fpga_board": "not run",
+    "int8_accuracy": "not evaluated",
+    "hgb_integration": "not performed"
+  },
+  "artifacts": {
+    "model_comparison": "reports/model-comparison.json",
+    "tiny_detections": "reports/dog-reference-tiny.json",
+    "full_profiles": [
+      "build/yolox-nano-audit.json",
+      "build/yolox-tiny-audit.json"
+    ],
+    "tiny_weights_lock": "config/yolox-tiny.lock.json",
+    "accelerator_evidence": "config/accelerators.json"
+  }
+}
