@@ -1,8 +1,9 @@
 # YOLOX-Tiny 与 FPGA 加速器选型
 
 核对日期：2026-10-23。**模型采用 YOLOX-Tiny，Nano 保留为资源或延迟不达标时的备选。
-加速器首轮移植候选采用 adamgallas 的卷积核，FIE 为第二候选，小配置 NVDLA 为第三候选。**
-这个顺序依据公开板级 CNN 证据、可核对的资源报告及本板适配成本；尚未完成紫光综合，
+用户已确定采用 adamgallas，规模为 128 MAC。** [128 MAC 后端](ADAM128.md) 已通过
+Verilator；FIE 与小配置 NVDLA 的比较保留为选型记录。
+原候选排序依据公开板级 CNN 证据、可核对的资源报告及本板适配成本；尚未完成紫光综合，
 不代表已确定最终硬件规模。本仓库已有自研矩阵 tile 保留作独立算术参考。
 
 按用户要求，tiny 系列按本次检索到的同名项目中 star 最高者核查：
@@ -118,9 +119,9 @@ README 的小于 50 ms、超过 250 MHz/172 GOPS 是作者原板结果声明，�
   Concat 和检测头需重新导出与调度。已有 2×2 pooling 不等于已支持 SPP。
   不能照搬旧量化脚本后宣称达到官方精度；作者也说明已停维护、模型迁移工程量较大。
 
-下一步先抽取卷积 RTL 和许可到本仓库的独立适配目录，保持上游与修改来源可追踪；
-暂不复制摄像头、显示、Vivado 生成目录或 Zynq BSP。先通过算术/缓存测试与 Pango 资源检查，
-再投入完整 YOLOX 调度。这一顺序可及早发现 25×18 映射导致的容量问题。
+上游卷积 RTL 与许可现已固定到 `third_party/adamgallas/`，适配代码位于 `rtl/adam/`。
+128 MAC 算术、缓存和卷积仿真已通过；完整 YOLOX 调度与 Pango 资源检查仍未完成。
+没有复制摄像头、显示、Vivado 生成目录或 Zynq BSP。
 
 ### FIE 与 NVDLA 的关键区别
 
@@ -152,14 +153,15 @@ tiny-tpu-v2 的串口 MNIST 报告为 6,033 ALM、5,556 寄存器、813,056 存�
 这是 `mnist_serial_classifier`→`mnist_classifier_core` 的 Q8.8、默认 TILE_WIDTH=2 两层 MLP。
 ALM 不能直接换算本板 LUT6，也不能按这个 demo 的 7 DSP 预算完整 CNN。
 
-## 本次完成和进入开发的条件
+## 选型阶段完成的内容和后续条件
 
-本次只修改 YOLO-accelerate：补齐模型选择参数、两模型计算图与容量分析、Tiny 官方权重
+选型阶段只修改 YOLO-accelerate：补齐模型选择参数、两模型计算图与容量分析、Tiny 官方权重
 PC 静态图参考、候选源码与资源证据清单。hgb、上级三个文档和任何 AGENTS.md 均未修改。
 没有运行 PDS、烧写 Flash、生成可交付板级 bitstream 或接入软核。
 
-首轮适配应依次验证：打包乘法替换与有符号极值；缓存和背压；1×1/3×3/stride-2 卷积及尾通道；
-BN 折叠、逐通道量化、SiLU/SPP/分支整数参考；DDR/CSR 与 CPU Cache 交接；最后静态发图。
+目前打包乘法替换、缓存、背压、1×1/3×3/stride-2 卷积及尾通道已通过 Verilator。
+后续依次完成 BN 折叠、逐通道量化、SiLU/SPP/分支整数参考、DDR/CSR 与 CPU Cache 交接，
+最后接通静态发图。
 若加速器超过 40K LUT 或算子/数值改造过重，转向 FIE 的缩小配置；若更看重标准运行时与
 后续通用 CNN，则重新比较 NVDLA 64/256。Nano 仅在 Tiny 实测延迟或资源确实不达标时启用。
 这几个进入条件必须由测试和报告决定，不能用 README 的原板数字代替。

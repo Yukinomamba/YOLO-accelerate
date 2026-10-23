@@ -1,0 +1,3 @@
+# Preserve the imported files byte-for-byte, including upstream whitespace.
+third_party/adamgallas/source/* -text -whitespace
+third_party/adamgallas/LICENSE -text -whitespace

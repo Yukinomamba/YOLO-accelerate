@@ -1,0 +1,6 @@
+`verilator_config
+// Only upstream files: retain their spelling, unused packed bits and timescales.
+lint_off -rule DECLFILENAME -file "*third_party/adamgallas/source/*"
+lint_off -rule UNUSEDSIGNAL -file "*third_party/adamgallas/source/*"
+lint_off -rule TIMESCALEMOD -file "*third_party/adamgallas/source/*"
+lint_off -rule UNUSEDPARAM -file "*third_party/adamgallas/source/com_simple_dual_port_ram.v"

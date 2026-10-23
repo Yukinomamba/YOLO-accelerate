@@ -35,7 +35,8 @@
     "remaining_lut6_margin": 29900,
     "npu_drm36k_ceiling": 160,
     "npu_apm_ceiling": 640,
-    "initial_clock_scenario_mhz": 100
+    "initial_clock_scenario_mhz": 100,
+    "parallel_int8_mac_target": 128
   },
   "limits": [
     "Two QSPI chips are board storage, not 32 MiB of on-die Flash.",

@@ -5,6 +5,9 @@ INT8 卷积加速、DDR 存放模型与特征的路线。板卡容量、候选�
 [选型报告](ACCELERATOR_SELECTION.md)。本文保留赛题、接口、数值约束和原有矩阵 tile 契约。
 完整推理与板级可行性仍需后续实现和测量。
 
+用户已确定 adamgallas 128 MAC；当前卷积后端的实现、接口和 Verilator 结果见
+[ADAM128.md](ADAM128.md)。本文件后面的 systolic tile 段落属于保留的原始参考实现。
+
 ## 赛题与已有工程
 
 已阅读上级 `HANDOVER.md`、`OPTIMIZATION_PLAN.md`、`ITERATIONS.md` 的当前进展、
@@ -27,8 +30,8 @@ PDS 库为准。200HP 手册的 LUT6/APM/DRM、Flash 和 DDR 数据已补入选�
 
 ## 当前选型
 
-模型以官方 YOLOX-Tiny 为主，首轮移植候选为 adamgallas 的已验证 FPGA 卷积核，
-FIE 次选，小配置 NVDLA 保留。详细证据、资源门槛、tiny 系列仓库消歧和算子差异见
+模型以官方 YOLOX-Tiny 为主，已确定采用 adamgallas 的 128 MAC 适配版本，
+FIE 与小配置 NVDLA 保留作方案对比。详细证据、资源门槛、tiny 系列仓库消歧和算子差异见
 [选型报告](ACCELERATOR_SELECTION.md)。已有自研 tile 保留作独立算术参考，
 不把矩阵仿真成功作为选定完整加速器的依据。后续导入第三方代码时固定提交并保留许可。
 
@@ -150,7 +153,7 @@ TCM 保留给控制、栈和中断，不将完整模型/大特征挤入 64 KiB D
 按其取数和端口要求重新分配片上缓存，不套用这项旧预算；完整活跃特征放 DDR。
 不复用现有 CoreMark 固定工作区地址，未来由固件分配不重叠的模型/输入/输出区域。
 
-## 本版 RTL 契约与验证
+## 原有 systolic tile 契约与验证
 
 `systolic_tile` 是 output-stationary 阵列：A 向右、B 向下，每 PE 保存一个 INT32 和。
 ROWS/COLS 为正整数，默认 4×4；一条命令给出 K，合法范围 1..65535。

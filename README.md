@@ -2,45 +2,52 @@
 
 RISC-V 控制的静态图像目标检测加速器。电脑传入图片，软核调度 FPGA 卷积计算，
 再返回类别、置信度与检测框。当前以 **YOLOX-Tiny 为主、Nano 为备选**，
-优先移植已验证的 FPGA 卷积核，不使用摄像头。
+采用 **adamgallas 的 128 MAC 卷积后端移植**，不使用摄像头。
 
 本仓库独立开发；不修改上级三个文档、任何 `AGENTS.md` 或 `hgb-aisystem_riscv`。
-当前分支为 `research/tiny-fpga-accelerator-selection`。
+当前分支为 `npu/adamgallas-128-verilator`。
 
 ## 已完成与下一步
 
-2026-10-23：已核对上级三文档的当前状态及 NPU 规划、`紫光.pdf`、现有 SoC 接口，
-重新核对 200HP 板卡的 32 MiB 外部 QSPI、1 GiB DDR、159,800 LUT6 和 740 APM。
-[选型报告](docs/ACCELERATOR_SELECTION.md) 比较 Tiny/Nano 和用户提出的加速器；
-首轮候选为 adamgallas 的 FPGA 卷积核，FIE 次选，小配置 NVDLA 保留。
-其 27×18 打包乘法与 Pango 25×18 APM 的差异必须先验证，尚未确认 Pango 资源与时序。
-[移植约束](docs/PORTING.md) 保留算子、SoC、UART 和原有 tile 的契约。
+2026-10-23：已完成 8 输入通道×16 输出通道的 128 MAC 后端与 Verilator 验证。
+上游 27×18 打包乘法已改为两路 signed 8×8，四拍延迟与全部输入组合逐项一致；
+新增 tile 缓存、1×1/3×3、stride/padding、INT32 累加及背压控制。
+[实现与接口](docs/ADAM128.md) 给出数据布局、分块、数值、验证和内存限制。
+[选型报告](docs/ACCELERATOR_SELECTION.md) 保留模型和板卡评估，
+[移植约束](docs/PORTING.md) 保留完整 YOLOX、SoC 与 UART 的后续工作。
 
 | 已完成 | 结果 |
 | --- | --- |
 | 官方 YOLOX-Nano CPU FP32 参考 | 上游 dog.jpg 检出 3 个目标；保存权重/图片哈希与检测框 |
 | 官方 YOLOX-Tiny CPU FP32 参考 | 上游 dog.jpg 检出自行车、汽车、狗；结果见 `reports/dog-reference-tiny.json` |
 | 两个官方计算图实际前向分析 | Tiny：5,055,855 参数，416 输入约 3.206G MAC，INT8 卷积权重约 4.805 MiB；Nano 约 0.523G MAC、0.855 MiB |
-| INT8×INT8→INT32 脉动阵列 RTL | 1×1、2×3、4×4、8×8 四种形状，各 101 组 GEMM，共 404 组通过 |
-| 协议检查 | 输入气泡、结果背压、有符号极值、K=65535、忙时命令、复位后恢复通过 |
-| Verilator 严格 lint | `-Wall` 通过；未关闭警告致错 |
+| adamgallas 算术移植 | 16,777,216 个全部 INT8 三元组与原版及整数参考逐拍一致；RAM 1,024 项通过 |
+| 128 MAC 卷积后端 | 110 个任务、6,270 个输出像素；最大 768 输入通道、四种整图分块拼接通过 |
+| 协议与结构 | 背压、非法命令、8 次复位恢复、执行周期检查通过；展开结构确认为 128 路乘法 |
+| Verilator 严格 lint | 移植 RTL `-Wall` 通过；上游对照文件仅使用局部 waiver |
+| 本次内存 | 全新构建进程组采样峰值 350.6 MiB；卷积仿真 3.9 MiB；单 CPU/单任务运行 |
 
-目前 RTL 是独立矩阵计算 tile，尚无卷积取数器、量化执行器、DMA/AXI 控制口、
-UART 固件或完整 YOLO 硬件执行。未运行 PDS、未接入 hgb、未上板。
-已有矩阵 tile 保留作参考；下一步先验证候选卷积核的 Pango 算术/存储适配，
-再完成 YOLOX-Tiny 的 INT8 校准、算子和逐层调度。Tiny 不需要 depthwise 通路。
+源码哈希、实际命令和原始日志位置见 [128 MAC 验证报告](reports/adam128-validation.json)。
+
+当前返回 INT32 卷积结果，尚无 requant/SiLU、DMA/AXI 控制口、UART 固件或完整 YOLO 执行。
+未运行 PDS、未接入 hgb、未上板。下一步是 Tiny 的量化与其余算子、逐层调度和存储接口。
+原有自研 systolic tile 及其 404 项历史 GEMM 验证保留作独立参考。
 
 ## 运行
 
-RTL 测试需要 Python 3、Verilator 和支持其版本的 C++ 编译器：
+RTL 测试需要 Python 3、Verilator 5.052（使用 JSON 展开检查）和 g++：
 
 ```bash
 make lint
 make test
+# 可选：单独验证内存保护机制
+python3 tb/check_memory_guard.py
 ```
 
-四组原始日志、命令及 RTL 哈希位于 `build/sim/`；运行器自动将 CCache 放在本仓库
-`build/`。`make clean` 只删除仿真构建，保留下载的源码、权重与模型分析结果。
+当前回归默认日志位于 `build/adam128/`，本次全新构建记录保留在 `build/adam128/final/`。
+构建固定 `-j1`，只使用一个 CPU，设进程地址空间上限和自身进程组 RSS 监测；默认不生成波形。
+超过内存/时间阈值只终止本次子进程组，不操作 hgb/PDS。
+`make tile-test` 单独执行旧矩阵 tile 回归。`make clean` 仅删除仿真构建，保留源码、权重与模型分析。
 
 模型分析需要已有 PyTorch/torchvision 环境，额外依赖可仅装入本仓库：
 
@@ -75,9 +82,11 @@ PYTHONPATH=build/python-deps python tools/reference_detect.py \
 
 ## 文件
 
-- `rtl/`：独立 PE 和脉动阵列；输入错位与握手契约见移植评估。
-- `tb/`：直接三重循环 GEMM 参考，包含流控和复位验证。
+- `rtl/adam/`：当前 128 MAC 卷积后端；`rtl/systolic*` 为原有矩阵参考。
+- `third_party/adamgallas/`：固定版本的上游原样源码、许可证与逐文件哈希。
+- `tb/`：上游算术/RAM 对照、独立标量卷积和分块参考、流控与复位测试。
 - `tools/`：RTL 回归、官方模型算子分析、预训练静态图片参考。
 - `docs/ACCELERATOR_SELECTION.md`：当前模型/加速器选择、板卡容量与资源门槛。
+- `docs/ADAM128.md`：128 MAC 后端实现、接口与 Verilator 验证。
 - `docs/PORTING.md`：赛题解释、算子、SoC 接口与原有 tile 契约。
 - `config/`、`reports/`：固定来源和本次可核对结果。

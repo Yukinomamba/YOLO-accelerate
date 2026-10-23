@@ -1,6 +1,6 @@
 {
   "date": "2026-10-23",
-  "selection": "YOLOX-Tiny primary; Nano fallback; first accelerator port candidate adam-yolov3tiny, contingent on Pango arithmetic, resource and protocol verification",
+  "selection": "User selected adamgallas 128 MAC; YOLOX-Tiny primary and Nano fallback. Compute backend passes Verilator; Pango resources and complete inference remain unverified.",
   "excluded_by_user": [
     "CNN_FPGA"
   ],

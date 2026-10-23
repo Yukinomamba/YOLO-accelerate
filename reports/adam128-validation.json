@@ -1,0 +1,268 @@
+{
+  "branch": "npu/adamgallas-128-verilator",
+  "source_base_commit": "dd1e6f3d6a39dbeaa6ad18071b5e5a3647cf0ff5",
+  "tool": "Verilator 5.052 2026-09-05 rev v5.052",
+  "source_sha256": {
+    "tb/adam_upstream.vlt": "d6f885e694573a732b7d56ed826fe8be757b82276ac0be4cfb48db88b7d24c74",
+    "tb/tb_adam_primitives.sv": "1bb2fcacdead2bfd4ffeae30fbbac922700a569440fef73907532f622ccbcb27",
+    "third_party/adamgallas/source/cal_mul_int8_x2.v": "bcf37e0b7704986e83ea1faa601d2d14f49ff5e7f05adc0d5202ef527ae5a8ae",
+    "third_party/adamgallas/source/cal_mul_int8_x2_dsp.v": "52bfbd6338fe566c4a0cc863c3ebea53a1b99f33c5674a79d9ee1b352384eaf6",
+    "third_party/adamgallas/source/com_simple_dual_port_ram.v": "902b3124668c46a089bb77a7a4f641fe36a5f25f07bd752379d56fa117499d0f",
+    "rtl/adam/adam_mul_pair.sv": "2b6e9e7837087efefe1bd12f9866d68219ec09fdbe2bd68925c1d7d03221f935",
+    "rtl/adam/adam_sdp_ram.sv": "20d2ca02713ea7eb826535a8ec7c9131c4b9ede0598b22b254f88d9e59043d0e",
+    "tb/adam_primitives.cpp": "02573bdbccff017226fe4337ef29799bf635a974561e4740ee2e47d6d23e4e23",
+    "tools/run_guarded.py": "0c3098fed4b23d1765a229dc39370fb8ec1b6701e525cdfae53bc8f060c7a84e",
+    "tools/run_adam_tests.py": "41f2c41d9b9dcd88298851a29cf3467ab47deeabfe478d550444d67d5065bdc8",
+    "rtl/adam/adam_mac128.sv": "0010667f2f53c73a219ad2ef83520a53ecf7d67cc28c2098d85361e721390f02",
+    "rtl/adam/adam_conv128.sv": "d1ef71647d2cad34c666883c61ed44a109794bf69d1ccad377b265dd09f59cb7",
+    "tb/adam_conv128.cpp": "443447e34c0eba83e808cccf71d57fd9ef3f38b2f09ab8be99e17a337d5b80d7",
+    "tb/check_memory_guard.py": "11f20c0e0bbcafc1ed4877244c75487941d24f56976374e1e9a29253de1e5e40"
+  },
+  "results": [
+    {
+      "name": "primitives",
+      "status": "PASS",
+      "result": "PASS adam primitives: 16777216 exhaustive INT8 triples, 1024 RAM checks; latency=4 edges",
+      "build": {
+        "command": [
+          "verilator",
+          "--cc",
+          "--exe",
+          "--build",
+          "-Wall",
+          "-j",
+          "1",
+          "--threads",
+          "1",
+          "--output-split",
+          "5000",
+          "--output-split-cfuncs",
+          "100",
+          "-CFLAGS",
+          "-O1 -g0",
+          "--top-module",
+          "tb_adam_primitives",
+          "--Mdir",
+          "build/adam128/final/primitives",
+          "tb/adam_upstream.vlt",
+          "tb/tb_adam_primitives.sv",
+          "third_party/adamgallas/source/cal_mul_int8_x2.v",
+          "third_party/adamgallas/source/cal_mul_int8_x2_dsp.v",
+          "third_party/adamgallas/source/com_simple_dual_port_ram.v",
+          "rtl/adam/adam_mul_pair.sv",
+          "rtl/adam/adam_sdp_ram.sv",
+          "tb/adam_primitives.cpp"
+        ],
+        "returncode": 0,
+        "guard_stop": null,
+        "elapsed_seconds": 8.243888171000435,
+        "sampled_process_group_peak_rss_bytes": 359809024,
+        "minimum_linux_available_bytes": 14084673536,
+        "rss_limit_mib": 512,
+        "per_process_address_space_limit_mib": 1024,
+        "linux_reserve_mib": 2048,
+        "cpu_affinity_count": 1,
+        "nice": 19,
+        "sampling_period_seconds": 0.05,
+        "limits": "RSS is sampled, not a cgroup hard limit; Windows memory is not measured here."
+      },
+      "run": {
+        "command": [
+          "build/adam128/final/primitives/Vtb_adam_primitives"
+        ],
+        "returncode": 0,
+        "guard_stop": null,
+        "elapsed_seconds": 1.2772497229998407,
+        "sampled_process_group_peak_rss_bytes": 3538944,
+        "minimum_linux_available_bytes": 14391476224,
+        "rss_limit_mib": 512,
+        "per_process_address_space_limit_mib": 1024,
+        "linux_reserve_mib": 2048,
+        "cpu_affinity_count": 1,
+        "nice": 19,
+        "sampling_period_seconds": 0.05,
+        "limits": "RSS is sampled, not a cgroup hard limit; Windows memory is not measured here."
+      },
+      "log": "build/adam128/final/primitives-run.log"
+    },
+    {
+      "name": "conv",
+      "status": "PASS",
+      "result": "PASS adam_conv128: 110 convolutions, 6270 output pixels, 4 stitched full-image cases, 9 invalid descriptors, 8 abort/recovery cases; cycles=483554; MACs=128; seed=0x20261023",
+      "build": {
+        "command": [
+          "verilator",
+          "--cc",
+          "--exe",
+          "--build",
+          "-Wall",
+          "-j",
+          "1",
+          "--threads",
+          "1",
+          "--output-split",
+          "5000",
+          "--output-split-cfuncs",
+          "100",
+          "-CFLAGS",
+          "-O1 -g0",
+          "--top-module",
+          "adam_conv128",
+          "--Mdir",
+          "build/adam128/final/conv",
+          "rtl/adam/adam_mul_pair.sv",
+          "rtl/adam/adam_sdp_ram.sv",
+          "rtl/adam/adam_mac128.sv",
+          "rtl/adam/adam_conv128.sv",
+          "tb/adam_conv128.cpp"
+        ],
+        "returncode": 0,
+        "guard_stop": null,
+        "elapsed_seconds": 9.196691047000058,
+        "sampled_process_group_peak_rss_bytes": 367669248,
+        "minimum_linux_available_bytes": 14077374464,
+        "rss_limit_mib": 512,
+        "per_process_address_space_limit_mib": 1024,
+        "linux_reserve_mib": 2048,
+        "cpu_affinity_count": 1,
+        "nice": 19,
+        "sampling_period_seconds": 0.05,
+        "limits": "RSS is sampled, not a cgroup hard limit; Windows memory is not measured here."
+      },
+      "run": {
+        "command": [
+          "build/adam128/final/conv/Vadam_conv128"
+        ],
+        "returncode": 0,
+        "guard_stop": null,
+        "elapsed_seconds": 0.406039964998854,
+        "sampled_process_group_peak_rss_bytes": 4128768,
+        "minimum_linux_available_bytes": 14396456960,
+        "rss_limit_mib": 512,
+        "per_process_address_space_limit_mib": 1024,
+        "linux_reserve_mib": 2048,
+        "cpu_affinity_count": 1,
+        "nice": 19,
+        "sampling_period_seconds": 0.05,
+        "limits": "RSS is sampled, not a cgroup hard limit; Windows memory is not measured here."
+      },
+      "log": "build/adam128/final/conv-run.log"
+    }
+  ],
+  "pds_run": false,
+  "board_run": false,
+  "structure": {
+    "paired_units": 64,
+    "products_per_unit": 2,
+    "parallel_int8_products": 128,
+    "scope": "MAC datapath only; not a Pango DSP/resource report",
+    "metrics": {
+      "command": [
+        "verilator",
+        "--json-only",
+        "-Wall",
+        "--top-module",
+        "adam_conv128",
+        "--json-only-output",
+        "build/adam128/final/structure.json",
+        "--json-only-meta-output",
+        "build/adam128/final/structure.meta.json",
+        "rtl/adam/adam_mul_pair.sv",
+        "rtl/adam/adam_sdp_ram.sv",
+        "rtl/adam/adam_mac128.sv",
+        "rtl/adam/adam_conv128.sv"
+      ],
+      "returncode": 0,
+      "guard_stop": null,
+      "elapsed_seconds": 0.10305171700019855,
+      "sampled_process_group_peak_rss_bytes": 31260672,
+      "minimum_linux_available_bytes": 14384332800,
+      "rss_limit_mib": 512,
+      "per_process_address_space_limit_mib": 1024,
+      "linux_reserve_mib": 2048,
+      "cpu_affinity_count": 1,
+      "nice": 19,
+      "sampling_period_seconds": 0.05,
+      "limits": "RSS is sampled, not a cgroup hard limit; Windows memory is not measured here."
+    }
+  },
+  "date": "2026-10-23",
+  "reproduce": [
+    "make lint ADAM_BUILD=build/adam128/final",
+    "make test ADAM_BUILD=build/adam128/final",
+    "python3 tb/check_memory_guard.py"
+  ],
+  "lint": {
+    "command": [
+      "verilator",
+      "--lint-only",
+      "-Wall",
+      "--top-module",
+      "adam_conv128",
+      "rtl/adam/adam_mul_pair.sv",
+      "rtl/adam/adam_sdp_ram.sv",
+      "rtl/adam/adam_mac128.sv",
+      "rtl/adam/adam_conv128.sv"
+    ],
+    "returncode": 0,
+    "guard_stop": null,
+    "elapsed_seconds": 0.1037304450001102,
+    "sampled_process_group_peak_rss_bytes": 32243712,
+    "minimum_linux_available_bytes": 14375239680,
+    "rss_limit_mib": 512,
+    "per_process_address_space_limit_mib": 1024,
+    "linux_reserve_mib": 2048,
+    "cpu_affinity_count": 1,
+    "nice": 19,
+    "sampling_period_seconds": 0.05,
+    "limits": "RSS is sampled, not a cgroup hard limit; Windows memory is not measured here."
+  },
+  "memory_guard_tests": [
+    {
+      "name": "limits",
+      "status": "PASS",
+      "expected_guard_stop": null,
+      "sampled_process_group_peak_rss_bytes": 4325376
+    },
+    {
+      "name": "rss",
+      "status": "PASS",
+      "expected_guard_stop": "own process group exceeded RSS cap",
+      "sampled_process_group_peak_rss_bytes": 42270720
+    },
+    {
+      "name": "address-space",
+      "status": "PASS",
+      "expected_guard_stop": null,
+      "sampled_process_group_peak_rss_bytes": 3932160
+    },
+    {
+      "name": "timeout",
+      "status": "PASS",
+      "expected_guard_stop": "timeout",
+      "sampled_process_group_peak_rss_bytes": 8650752
+    }
+  ],
+  "upstream_manifest_sha256": "558c316558fa96d1e21175db6caeb669913a96838a0f8137943dbfe10ce9fa43",
+  "host_memory_before": {
+    "source": "read-only Windows Win32_PerfFormattedData_PerfOS_Memory query",
+    "available_bytes": 18598576128,
+    "committed_bytes": 23501762560,
+    "commit_limit": 38419685376
+  },
+  "scope": {
+    "implemented": "128 MAC INT8 tile convolution with INT32 outputs",
+    "hgb_modified_by_this_task": false,
+    "complete_yolox_inference": false,
+    "quantization_and_activation": false,
+    "dma_axi_integration": false,
+    "upstream_full_accelerator_regression": false,
+    "old_systolic_regression_rerun": false
+  },
+  "host_memory_after": {
+    "source": "read-only Windows Win32_PerfFormattedData_PerfOS_Memory query",
+    "available_bytes": 17700552704,
+    "committed_bytes": 23633477632,
+    "commit_limit": 38419685376
+  }
+}
