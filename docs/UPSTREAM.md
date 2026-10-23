@@ -1,5 +1,8 @@
 # 完整上游数据通路的 Pango 移植
 
+接手入口见 [交接文档](HANDOFF.md)，包含 RT-Thread、CPU/DMA/NPU 分工和并行调度约束。
+当前未完成的综合、布局布线和上板均暂缓；下文 PDS 命令保留作后续恢复工作的参考，本次不执行。
+
 分支 `fpga/adam-upstream-faithful` 从 `f0134a0` 建立。
 `fpga/npu128-bringup` 和 `baseline/adam128-image-cosim-20261023` 保留原有实现。
 当前主线直接例化固定提交 `6ba312bd220e67a987d3417bacd030db30b15770` 的 `Accel_Conv`。
@@ -95,7 +98,7 @@ $project = Join-Path $env:PDS_WORK_ROOT 'work\adam-upstream-new'
 
 [仿真记录](../reports/upstream-validation.json) 和
 [综合尝试记录](../reports/upstream-synthesis-attempts.json) 保存命令、源码和原始证据哈希。
-余量充足时，在新的工程目录运行上述综合命令。结果收集命令为：
+后续恢复综合且余量充足时，在新的工程目录运行上述命令。结果收集命令为：
 
 ```bash
 python3 tools/pango/collect_upstream_report.py \

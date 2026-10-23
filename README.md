@@ -9,6 +9,9 @@ RISC-V 控制的静态图像目标检测加速器。电脑传入图片，软核�
 原图片仿真固定在
 `baseline/adam128-image-cosim-20261023`（`658b547`）。
 
+接手开发先读 [交接文档](docs/HANDOFF.md)：源码来源与版本边界、完整卷积架构、RV32IM/RT-Thread
+分工、DMA 与计算重叠的条件、已有验证和后续顺序。本次剩余综合、布局布线与上板工作暂缓。
+
 ## 当前上游移植
 
 `rtl/upstream/adam_upstream.sv` 直接例化原 `Accel_Conv`，保留全部 50 个上游 RTL 文件的
@@ -58,8 +61,8 @@ SiLU、池化、图调度、量化/反量化、框解码及 NMS 在电脑上执�
 
 图片联合仿真仍使用 INT32 卷积结果，通过电脑上的动态 INT8 量化和 FP32 剩余算子衔接；
 新增的定点后处理已经单独验证，尚未接入图片路径或完成 YOLOX 静态量化校准。
-当前没有 DMA/AXI 控制口或 UART 固件，未接入 hgb、未上板。
-下一步是地址计算流水、静态量化、软核算子/调度和存储接口。
+旧 128 MAC 图片路径没有 DMA/AXI 控制口或 UART 固件。当前完整上游虽然保留原生 AXI-Lite/AXIS，
+也尚未接入 hgb、未上板。后续以 [交接文档](docs/HANDOFF.md) 中的完整上游适配顺序为准。
 原有自研 systolic tile 及其 404 项历史 GEMM 验证保留作独立参考。
 
 ## 运行
@@ -128,7 +131,7 @@ PYTHONPATH=build/python-deps python tools/reference_detect.py \
 
 - `rtl/upstream/`：原始完整加速器的参数/端口透传封装，当前硬件主线。
 - `software/`：原生寄存器 ABI、任务发起与输入/权重/bias 打包，整数 C 接口。
-- `rtl/adam/`：当前 128 MAC 卷积后端；`rtl/systolic*` 为原有矩阵参考。
+- `rtl/adam/`：保留的 128 MAC 卷积后端；`rtl/systolic*` 为原有矩阵参考。
 - `rtl/npu/`：定点后处理、NPU 封装和独立测量顶层。
 - `third_party/adamgallas/`：固定版本的上游原样源码、许可证与逐文件哈希。
 - `tb/`：上游算术/RAM 对照、独立标量卷积和分块参考、流控与复位测试。
