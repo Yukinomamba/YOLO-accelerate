@@ -70,8 +70,9 @@ module adam_conv128 #(
 
     assign busy = state_q != IDLE;
     // 装载优先于命令。忙时禁止改写缓存，复位期间禁止任何握手。
-    assign act_wr_ready = !rst && !busy && int'(act_wr_addr) < ACT_DEPTH;
-    assign weight_wr_ready = !rst && !busy && int'(weight_wr_addr) < WEIGHT_DEPTH;
+    // 窄无符号量先补零再转 int；ADS 2025.2 对直接 int'(x) 的扩展与 Verilator 不同。
+    assign act_wr_ready = !rst && !busy && int'({1'b0, act_wr_addr}) < ACT_DEPTH;
+    assign weight_wr_ready = !rst && !busy && int'({1'b0, weight_wr_addr}) < WEIGHT_DEPTH;
     assign cmd_ready = !rst && !busy && !act_wr_valid && !weight_wr_valid;
     assign cmd_fire = cmd_valid && cmd_ready;
     assign out_valid = !rst && state_q == OUTPUT;
@@ -79,27 +80,27 @@ module adam_conv128 #(
     assign out_last = out_x == out_width_q - 1'b1 && out_y == out_height_q - 1'b1;
 
     always_comb begin
-        proposed_width = int'(cmd_width) + 2*int'(cmd_pad) - (cmd_kernel3 ? 3 : 1);
-        proposed_height = int'(cmd_height) + 2*int'(cmd_pad) - (cmd_kernel3 ? 3 : 1);
-        descriptor_ok = cmd_width > 0 && int'(cmd_width) <= MAX_SIDE &&
-                        cmd_height > 0 && int'(cmd_height) <= MAX_SIDE &&
-                        cmd_cin > 0 && int'(cmd_cin) <= MAX_CIN &&
+        proposed_width = int'({1'b0, cmd_width}) + 2*int'({1'b0, cmd_pad}) - (cmd_kernel3 ? 3 : 1);
+        proposed_height = int'({1'b0, cmd_height}) + 2*int'({1'b0, cmd_pad}) - (cmd_kernel3 ? 3 : 1);
+        descriptor_ok = cmd_width > 0 && int'({1'b0, cmd_width}) <= MAX_SIDE &&
+                        cmd_height > 0 && int'({1'b0, cmd_height}) <= MAX_SIDE &&
+                        cmd_cin > 0 && int'({1'b0, cmd_cin}) <= MAX_CIN &&
                         cmd_cout > 0 && cmd_cout <= 16 &&
                         (cmd_kernel3 || !cmd_pad) && proposed_width >= 0 && proposed_height >= 0;
     end
 
     always_comb begin
         kernel_size = kernel3_q ? 3 : 1;
-        input_x = int'(out_x) * (stride2_q ? 2 : 1) + int'(tap_x_q) - int'(pad_q);
-        input_y = int'(out_y) * (stride2_q ? 2 : 1) + int'(tap_y_q) - int'(pad_q);
-        inside_image = input_x >= 0 && input_x < int'(width_q) &&
-                       input_y >= 0 && input_y < int'(height_q);
+        input_x = int'({1'b0, out_x}) * (stride2_q ? 2 : 1) + int'({1'b0, tap_x_q}) - int'({1'b0, pad_q});
+        input_y = int'({1'b0, out_y}) * (stride2_q ? 2 : 1) + int'({1'b0, tap_y_q}) - int'({1'b0, pad_q});
+        inside_image = input_x >= 0 && input_x < int'({1'b0, width_q}) &&
+                       input_y >= 0 && input_y < int'({1'b0, height_q});
         act_rd_addr = '0;
         if (inside_image)
-            act_rd_addr = ACT_AW'((input_y*int'(width_q)+input_x)*int'(groups_q)+int'(group_q));
-        weight_rd_addr = WEIGHT_AW'((int'(tap_y_q)*kernel_size+int'(tap_x_q))*int'(groups_q)+int'(group_q));
+            act_rd_addr = ACT_AW'((input_y*int'({1'b0, width_q})+input_x)*int'({1'b0, groups_q})+int'({1'b0, group_q}));
+        weight_rd_addr = WEIGHT_AW'((int'({1'b0, tap_y_q})*kernel_size+int'({1'b0, tap_x_q}))*int'({1'b0, groups_q})+int'({1'b0, group_q}));
         issue_last = group_q == groups_q - 1'b1 &&
-                     int'(tap_x_q) == kernel_size-1 && int'(tap_y_q) == kernel_size-1;
+                     int'({1'b0, tap_x_q}) == kernel_size-1 && int'({1'b0, tap_y_q}) == kernel_size-1;
     end
 
     adam_sdp_ram #(.WIDTH(64), .DEPTH(ACT_DEPTH), .ADDR_W(ACT_AW)) u_activation_ram (
@@ -123,7 +124,7 @@ module adam_conv128 #(
             read_last_q <= state_q == ISSUE && issue_last;
             read_padding_q <= !inside_image;
             for (int lane = 0; lane < 8; lane++)
-                read_mask_q[lane] <= int'(group_q)*8 + lane < int'(cin_q);
+                read_mask_q[lane] <= int'({1'b0, group_q})*8 + lane < int'({1'b0, cin_q});
         end
     end
 
@@ -134,7 +135,7 @@ module adam_conv128 #(
             if (read_mask_q[ic] && !read_padding_q)
                 mac_activation[ic*8 +: 8] = act_rd_data[ic*8 +: 8];
             for (int oc = 0; oc < 16; oc++) begin
-                if (oc < int'(cout_q) && read_mask_q[ic])
+                if (oc < int'({1'b0, cout_q}) && read_mask_q[ic])
                     mac_weight[(oc*8+ic)*8 +: 8] = weight_rd_data[(oc*8+ic)*8 +: 8];
             end
         end
@@ -152,7 +153,7 @@ module adam_conv128 #(
             for (int oc = 0; oc < 16; oc++) accumulator_q[oc] <= '0;
         end else if (state_q == PREPARE) begin
             for (int oc = 0; oc < 16; oc++)
-                accumulator_q[oc] <= oc < int'(cout_q) ? bias_q[oc*32 +: 32] : 32'b0;
+                accumulator_q[oc] <= oc < int'({1'b0, cout_q}) ? bias_q[oc*32 +: 32] : 32'b0;
         end else if (mac_valid) begin
             for (int oc = 0; oc < 16; oc++) begin
                 accumulator_q[oc] <= accumulator_q[oc] + mac_dot[oc*32 +: 32];
@@ -204,11 +205,11 @@ module adam_conv128 #(
                             stride2_q <= cmd_stride2;
                             pad_q <= cmd_pad;
                             bias_q <= cmd_bias;
-                            out_width_q <= 8'((proposed_width >> int'(cmd_stride2)) + 1);
-                            out_height_q <= 8'((proposed_height >> int'(cmd_stride2)) + 1);
+                            out_width_q <= 8'((proposed_width >> int'({1'b0, cmd_stride2})) + 1);
+                            out_height_q <= 8'((proposed_height >> int'({1'b0, cmd_stride2})) + 1);
                             out_x <= '0;
                             out_y <= '0;
-                            for (int oc = 0; oc < 16; oc++) out_mask[oc] <= oc < int'(cmd_cout);
+                            for (int oc = 0; oc < 16; oc++) out_mask[oc] <= oc < int'({1'b0, cmd_cout});
                             perf_mac_steps <= '0;
                             perf_active_cycles <= '0;
                             state_q <= PREPARE;
@@ -227,7 +228,7 @@ module adam_conv128 #(
                         state_q <= DRAIN;
                     end else if (group_q == groups_q - 1'b1) begin
                         group_q <= '0;
-                        if (int'(tap_x_q) == kernel_size-1) begin
+                        if (int'({1'b0, tap_x_q}) == kernel_size-1) begin
                             tap_x_q <= '0;
                             tap_y_q <= tap_y_q + 1'b1;
                         end else begin

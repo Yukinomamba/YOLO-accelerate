@@ -5,7 +5,8 @@ RISC-V 控制的静态图像目标检测加速器。电脑传入图片，软核�
 采用 **adamgallas 的 128 MAC 卷积后端移植**，不使用摄像头。
 
 本仓库独立开发；不修改上级三个文档、任何 `AGENTS.md` 或 `hgb-aisystem_riscv`。
-当前分支为 `sim/yolox-tiny-image-cosim`。
+当前分支为 `fpga/npu128-bringup`；原图片仿真固定在
+`baseline/adam128-image-cosim-20261023`（`658b547`）。
 
 ## 已完成与下一步
 
@@ -15,6 +16,15 @@ RISC-V 控制的静态图像目标检测加速器。电脑传入图片，软核�
 [实现与接口](docs/ADAM128.md) 给出数据布局、分块、数值、验证和内存限制。
 [选型报告](docs/ACCELERATOR_SELECTION.md) 保留模型和板卡评估，
 [移植约束](docs/PORTING.md) 保留完整 YOLOX、SoC 与 UART 的后续工作。
+
+新增 `npu_conv128`：四路逐通道 INT32→INT8 重新量化、可装载 SiLU 的激活表、
+最终输出交付后的完成握手与周期计数。图调度继续交给 CPU。
+[NPU 接口与综合评估](docs/NPU.md) 记录定点规则、配置协议、测试与独立 PDS 工程。
+Windows PDS 综合测得 NPU 本体 **5,398 LUT、3,597 FF、83 APM、94.5 等效 DRM36K**；
+100 MHz 约束下估算 Fmax **71.88 MHz**、setup WNS **−3.912 ns**，尚未时序收敛。
+最差路径位于激活 RAM 地址计算；尚无布局布线或上板结果。
+NPU 的 Verilator 回归与 GTP 网表功能核对均通过；门级核对包含 432 次事务和 105 份快照，
+通过直接装载测量寄存器省去串行空拍，范围见 [网表验证记录](reports/npu128-netlist-validation.json)。
 
 已接通 **图片 → YOLOX-Tiny 全部 83 层 RTL 卷积 → 带框图片** 的联合仿真。
 SiLU、池化、图调度、量化/反量化、框解码及 NMS 在电脑上执行；
@@ -34,9 +44,10 @@ SiLU、池化、图调度、量化/反量化、框解码及 NMS 在电脑上执�
 
 源码哈希、实际命令和原始日志位置见 [128 MAC 验证报告](reports/adam128-validation.json)。
 
-RTL 返回 INT32 卷积结果；完整图通过电脑上的动态 INT8 量化和 FP32 剩余算子衔接。
-尚无板端 requant/SiLU、DMA/AXI 控制口或 UART 固件，未运行 PDS、未接入 hgb、未上板。
-下一步是静态量化、软核算子/调度和存储接口。
+图片联合仿真仍使用 INT32 卷积结果，通过电脑上的动态 INT8 量化和 FP32 剩余算子衔接；
+新增的定点后处理已经单独验证，尚未接入图片路径或完成 YOLOX 静态量化校准。
+当前没有 DMA/AXI 控制口或 UART 固件，未接入 hgb、未上板。
+下一步是地址计算流水、静态量化、软核算子/调度和存储接口。
 原有自研 systolic tile 及其 404 项历史 GEMM 验证保留作独立参考。
 
 ## 运行
@@ -62,7 +73,8 @@ make test
 python3 tb/check_memory_guard.py
 ```
 
-当前回归默认日志位于 `build/adam128/`，本次全新构建记录保留在 `build/adam128/final/`。
+当前回归默认日志位于 `build/adam128/` 和 `build/npu128/`；
+`make npu-test` 可单独执行新增 NPU 测试，详细结果见 [NPU 说明](docs/NPU.md)。
 构建固定 `-j1`，只使用一个 CPU，设进程地址空间上限和自身进程组 RSS 监测；默认不生成波形。
 超过内存/时间阈值只终止本次子进程组，不操作 hgb/PDS。
 `make tile-test` 单独执行旧矩阵 tile 回归。`make clean` 仅删除仿真构建，保留源码、权重与模型分析。
@@ -101,12 +113,15 @@ PYTHONPATH=build/python-deps python tools/reference_detect.py \
 ## 文件
 
 - `rtl/adam/`：当前 128 MAC 卷积后端；`rtl/systolic*` 为原有矩阵参考。
+- `rtl/npu/`：定点后处理、NPU 封装和独立测量顶层。
 - `third_party/adamgallas/`：固定版本的上游原样源码、许可证与逐文件哈希。
 - `tb/`：上游算术/RAM 对照、独立标量卷积和分块参考、流控与复位测试。
 - `sim/`：通过真实 RTL 端口执行完整特征图卷积的 Verilator 程序。
 - `tools/`：RTL 回归、官方模型算子分析、预训练参考和图片联合仿真。
+- `tools/pango/`：独立 PDS 工程生成、Windows 内存保护、报告提取与网表功能检查。
 - `docs/ACCELERATOR_SELECTION.md`：当前模型/加速器选择、板卡容量与资源门槛。
 - `docs/ADAM128.md`：128 MAC 后端实现、接口与 Verilator 验证。
 - `docs/IMAGE_SIM.md`：图片输入/画框输出命令、完整图联合仿真与数值边界。
+- `docs/NPU.md`：NPU 定点接口、原版 baseline、综合资源与时序限制。
 - `docs/PORTING.md`：赛题解释、算子、SoC 接口与原有 tile 契约。
 - `config/`、`reports/`：固定来源和本次可核对结果。

@@ -2,16 +2,25 @@ PYTHON ?= python3
 VERILATOR ?= verilator
 MODEL ?= yolox-tiny
 ADAM_BUILD ?= build/adam128
+NPU_BUILD ?= build/npu128
 TORCH_PYTHON ?= python3
 IMAGE ?= build/upstream/YOLOX/assets/dog.jpg
 OUTPUT ?= build/dog-adam128.png
 SIZE ?= 416
 ADAM_RTL = rtl/adam/adam_mul_pair.sv rtl/adam/adam_sdp_ram.sv rtl/adam/adam_mac128.sv rtl/adam/adam_conv128.sv
+NPU_RTL = $(ADAM_RTL) rtl/npu/npu_postprocess.sv rtl/npu/npu_conv128.sv rtl/npu/npu_measure_top.sv
 
-.PHONY: test lint adam-test adam-lint tile-test audit audit-both image-sim image-test image-detect clean
-test: adam-test
+.PHONY: test lint adam-test adam-lint npu-test npu-lint tile-test audit audit-both image-sim image-test image-detect clean
+.NOTPARALLEL: test lint
+test: adam-test npu-test
 
-lint: adam-lint
+lint: adam-lint npu-lint
+
+npu-test:
+	$(PYTHON) tools/run_npu_tests.py --verilator $(VERILATOR) --build-dir $(NPU_BUILD)
+
+npu-lint:
+	$(PYTHON) tools/run_guarded.py --log $(NPU_BUILD)/lint.log --metrics $(NPU_BUILD)/lint.metrics.json -- $(VERILATOR) --lint-only -Wall --top-module npu_measure_top $(NPU_RTL)
 
 adam-test:
 	$(PYTHON) tools/run_adam_tests.py --verilator $(VERILATOR) --build-dir $(ADAM_BUILD)
@@ -40,4 +49,4 @@ audit-both:
 	$(PYTHON) tools/compare_models.py --nano build/yolox-nano-audit.json --tiny build/yolox-tiny-audit.json --output build/model-comparison.json
 
 clean:
-	rm -rf build/sim build/adam128 build/image-cosim
+	rm -rf build/sim build/adam128 build/npu128 build/image-cosim
