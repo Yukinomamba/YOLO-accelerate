@@ -2,9 +2,13 @@ PYTHON ?= python3
 VERILATOR ?= verilator
 MODEL ?= yolox-tiny
 ADAM_BUILD ?= build/adam128
+TORCH_PYTHON ?= python3
+IMAGE ?= build/upstream/YOLOX/assets/dog.jpg
+OUTPUT ?= build/dog-adam128.png
+SIZE ?= 416
 ADAM_RTL = rtl/adam/adam_mul_pair.sv rtl/adam/adam_sdp_ram.sv rtl/adam/adam_mac128.sv rtl/adam/adam_conv128.sv
 
-.PHONY: test lint adam-test adam-lint tile-test audit audit-both clean
+.PHONY: test lint adam-test adam-lint tile-test audit audit-both image-sim image-test image-detect clean
 test: adam-test
 
 lint: adam-lint
@@ -18,6 +22,15 @@ adam-lint:
 tile-test:
 	$(PYTHON) tools/run_guarded.py --log build/sim/guard.log --metrics build/sim/guard.metrics.json -- $(PYTHON) tools/run_rtl_tests.py --verilator $(VERILATOR) --jobs 1
 
+image-sim:
+	$(PYTHON) tools/build_image_sim.py --verilator $(VERILATOR)
+
+image-test: image-sim
+	$(PYTHON) tools/run_guarded.py --log build/image-cosim/backend-test.log --metrics build/image-cosim/backend-test.metrics.json -- $(PYTHON) tb/check_image_backend.py
+
+image-detect: image-sim
+	$(PYTHON) tools/run_guarded.py --rss-mib 1024 --as-mib 16384 --min-available-mib 4096 --seconds 600 --log "$(OUTPUT).run.log" --metrics "$(OUTPUT).metrics.json" -- $(TORCH_PYTHON) tools/detect_image.py --image "$(IMAGE)" --output "$(OUTPUT)" --size $(SIZE)
+
 audit:
 	$(PYTHON) tools/audit_yolox.py --source build/upstream/YOLOX --model $(MODEL) --output build/$(MODEL)-audit.json
 
@@ -27,4 +40,4 @@ audit-both:
 	$(PYTHON) tools/compare_models.py --nano build/yolox-nano-audit.json --tiny build/yolox-tiny-audit.json --output build/model-comparison.json
 
 clean:
-	rm -rf build/sim build/adam128
+	rm -rf build/sim build/adam128 build/image-cosim

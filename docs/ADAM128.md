@@ -2,7 +2,8 @@
 
 2026-10-23，用户确定采用 adamgallas、128 个并行 MAC，先通过 Verilator。
 本次完成的是**可装载 tile、独立执行卷积并返回 INT32 结果的计算后端**。
-它尚未连接 AXI/DDR/UART，也没有执行完整 YOLOX-Tiny 网络。
+它尚未连接 AXI/DDR/UART。现已通过 [图片联合仿真](IMAGE_SIM.md) 执行完整 YOLOX-Tiny 图，
+其中所有卷积由本后端执行，其余算子及调度由电脑执行。
 
 源码分支 `npu/adamgallas-128-verilator`，上游固定为
 `6ba312bd220e67a987d3417bacd030db30b15770`。[来源说明](../third_party/adamgallas/README.md)
@@ -138,5 +139,6 @@ RSS 是采样阈值，可能短暂超过；它不是 cgroup 硬上限，也不�
 也没有操作其他任务的进程。内存保护已用小型子进程验证限额、主动停止和超时行为。
 
 后续仍需：INT8 校准与 BN 折叠、requant/SiLU/SPP/分支算子、模型描述符与缓存分配、
-AXI DMA/CSR、软核驱动与 Cache 交接、UART 静态图链路。完整 YOLOX 推理和 Pango
-RAM/APM 推断、资源、时序、上板验证均未完成；本次 PASS 只覆盖上述计算后端。
+AXI DMA/CSR、软核驱动与 Cache 交接、UART 静态图链路。整图的 CPU/RTL 联合仿真见
+[图片仿真说明](IMAGE_SIM.md)；完整板端推理和 Pango RAM/APM 推断、资源、时序、
+上板验证均未完成。本页的原始回归结果只覆盖上述计算后端。

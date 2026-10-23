@@ -1,0 +1,5096 @@
+{
+  "date": "2026-10-23",
+  "branch": "sim/yolox-tiny-image-cosim",
+  "source_base_commit": "ccf91729ea4be3fdb6bf41e482a3078af67661d8",
+  "source_sha256": {
+    "rtl/adam/adam_mul_pair.sv": "2b6e9e7837087efefe1bd12f9866d68219ec09fdbe2bd68925c1d7d03221f935",
+    "rtl/adam/adam_sdp_ram.sv": "20d2ca02713ea7eb826535a8ec7c9131c4b9ede0598b22b254f88d9e59043d0e",
+    "rtl/adam/adam_mac128.sv": "0010667f2f53c73a219ad2ef83520a53ecf7d67cc28c2098d85361e721390f02",
+    "rtl/adam/adam_conv128.sv": "d1ef71647d2cad34c666883c61ed44a109794bf69d1ccad377b265dd09f59cb7",
+    "sim/adam_image_server.cpp": "e2f0427058ff4d315b93120fb22a5adf83d4e06e588e4e20d7abddedfae08818",
+    "tools/adam_image_backend.py": "a0fcc92bd846f55a205f73174d45b50015016cf6745dfd6e33f88e5e0a32e2be",
+    "tools/detect_image.py": "689ed5b2b6466e02e6e47fca49956490a76569a5c7ca94b1e45233f699237f7c",
+    "tools/build_image_sim.py": "c3afd629f6f56ed686aa69973710e41756b77dbe48dce846aae860f23c81c87d",
+    "tools/run_guarded.py": "0c3098fed4b23d1765a229dc39370fb8ec1b6701e525cdfae53bc8f060c7a84e",
+    "tb/check_image_backend.py": "ec6389e2758231aa50ccf3dd6b22cc9aee30afb0c7d9be4917f45aaa6608d0c6",
+    "Makefile": "17c767bec43a5e5d43da7a76071d4f71572ae533914b0c8d4042d138db48c0a6"
+  },
+  "source_identity_note": "Implementation was uncommitted during measurement; these hashes identify the exact tested sources.",
+  "result": "PASS",
+  "image_runs": [
+    {
+      "mode": "Verilator adam128 INT8 convolution + CPU FP32 remaining graph operators",
+      "model": "YOLOX-Tiny",
+      "input_size": 416,
+      "original_hw": [
+        576,
+        768
+      ],
+      "upstream_commit": "6ddff4824372906469a7fae2dc3206c7aa4bbaee",
+      "weights_sha256": "9de513de589ac98bb92d3bca53b5af7b9acfa9b0bacb831f7999d0f7afaee8f0",
+      "image_sha256": "5a9522051c3cec2bbd2f6323fccba32e8fbf3ddcc2b3e2fd46b04c720bc6f866",
+      "annotated_image_sha256": "3bc3531bb52cfd3e83594dd9a88825315c077c04394ba923ba498fbc9adb23c0",
+      "torch": "2.14.0+cu126",
+      "numpy": "2.4.6",
+      "opencv": "5.0.0",
+      "preprocess": "official non-legacy BGR, top-left resize, pad=114, CHW, no /255",
+      "quantization": "dynamic per-tensor activation + per-output-channel weight symmetric INT8 [-127,127]; round ties to even; INT32 RTL accumulator; CPU FP32 dequant/bias; no calibration",
+      "cpu_ops": [
+        "preprocess",
+        "quantize/dequantize",
+        "bias",
+        "BatchNorm",
+        "SiLU",
+        "Focus",
+        "residual add",
+        "concat",
+        "MaxPool",
+        "nearest upsample",
+        "sigmoid",
+        "decode",
+        "NMS",
+        "draw"
+      ],
+      "rtl_conv_layers": 83,
+      "cpu_conv_layers": 0,
+      "integer_verification": true,
+      "confidence": 0.25,
+      "nms_iou": 0.45,
+      "class_agnostic_nms": true,
+      "detections": [
+        {
+          "class_id": 1,
+          "class_name": "bicycle",
+          "score": 0.8912416047670035,
+          "xyxy_original": [
+            125.72104586087741,
+            133.78005277193512,
+            564.6572077824519,
+            420.6316293569712
+          ]
+        },
+        {
+          "class_id": 2,
+          "class_name": "car",
+          "score": 0.712867674738817,
+          "xyxy_original": [
+            471.081777719351,
+            80.62055617112381,
+            689.9133488581731,
+            167.6859318659856
+          ]
+        },
+        {
+          "class_id": 15,
+          "class_name": "cat",
+          "score": 0.5539526114607725,
+          "xyxy_original": [
+            130.34052922175482,
+            217.69797926682693,
+            310.5725661057692,
+            535.9734825721155
+          ]
+        }
+      ],
+      "totals": {
+        "rtl_clock_cycles": 41478059,
+        "rtl_mac_steps": 26029380,
+        "rtl_active_cycles": 31303532,
+        "tile_commands": 4799,
+        "output_values": 9760257,
+        "scalar_checked_values": 9760257,
+        "useful_macs": 3206268000
+      },
+      "elapsed_seconds": 30.567817477000062,
+      "simulator": {
+        "verilator": "Verilator 5.052 2026-09-05 rev v5.052",
+        "binary_sha256": "77e05148edeef4a0277ad91f2421e1e5ef2dc87b0790b059a59f90abb0e4ccd1",
+        "source_sha256": {
+          "rtl/adam/adam_mul_pair.sv": "2b6e9e7837087efefe1bd12f9866d68219ec09fdbe2bd68925c1d7d03221f935",
+          "rtl/adam/adam_sdp_ram.sv": "20d2ca02713ea7eb826535a8ec7c9131c4b9ede0598b22b254f88d9e59043d0e",
+          "rtl/adam/adam_mac128.sv": "0010667f2f53c73a219ad2ef83520a53ecf7d67cc28c2098d85361e721390f02",
+          "rtl/adam/adam_conv128.sv": "d1ef71647d2cad34c666883c61ed44a109794bf69d1ccad377b265dd09f59cb7",
+          "sim/adam_image_server.cpp": "e2f0427058ff4d315b93120fb22a5adf83d4e06e588e4e20d7abddedfae08818"
+        }
+      },
+      "scope": {
+        "full_yolox_graph": true,
+        "all_convolutions_rtl": true,
+        "all_ops_rtl": false,
+        "static_int8_deployment": false,
+        "riscv_uart_ddr_simulated": false,
+        "board_run": false
+      },
+      "result": "PASS",
+      "raw_report": "build/dog-adam128.json",
+      "raw_report_sha256": "5c4da3a9a5e59b5792a3446c3a4c1bd5f90f884ccc2a3713fc6fcd0c01f868ff",
+      "annotated_image": "build/dog-adam128.png",
+      "run_log": "build/dog-adam128.png.run.log",
+      "metrics": {
+        "command": [
+          "$TORCH_PYTHON",
+          "tools/detect_image.py",
+          "--image",
+          "build/upstream/YOLOX/assets/dog.jpg",
+          "--output",
+          "build/dog-adam128.png"
+        ],
+        "returncode": 0,
+        "guard_stop": null,
+        "elapsed_seconds": 33.7772508320013,
+        "sampled_process_group_peak_rss_bytes": 781651968,
+        "minimum_linux_available_bytes": 13929906176,
+        "rss_limit_mib": 1024,
+        "per_process_address_space_limit_mib": 16384,
+        "linux_reserve_mib": 4096,
+        "cpu_affinity_count": 1,
+        "nice": 19,
+        "sampling_period_seconds": 0.05,
+        "limits": "RSS is sampled, not a cgroup hard limit; Windows memory is not measured here."
+      },
+      "layers": [
+        {
+          "name": "backbone.backbone.stem.conv.conv",
+          "input_chw": [
+            12,
+            208,
+            208
+          ],
+          "output_chw": [
+            24,
+            208,
+            208
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 2476790,
+          "rtl_mac_steps": 1557504,
+          "rtl_active_cycles": 2249728,
+          "tile_commands": 450,
+          "output_values": 1038336,
+          "scalar_checked_values": 1038336,
+          "useful_macs": 112140288,
+          "input_int8_sha256": "69d699549be0b6bb3ef207bfa94cd162b692527a29fc318c4df245662b5aa399",
+          "weight_int8_sha256": "3512e2ef7d41d5885b83b2bfcfddade0a34ed3d0a4696d56ed27098b216dc361",
+          "output_int32_sha256": "c68c97e057885b2a068307a152a7b34ffe4b66b0c797ed8f06fdb72535b83809"
+        },
+        {
+          "name": "backbone.backbone.dark2.0.conv",
+          "input_chw": [
+            24,
+            208,
+            208
+          ],
+          "output_chw": [
+            48,
+            104,
+            104
+          ],
+          "kernel": 3,
+          "stride": 2,
+          "padding": 1,
+          "rtl_clock_cycles": 1583997,
+          "rtl_mac_steps": 876096,
+          "rtl_active_cycles": 1135680,
+          "tile_commands": 675,
+          "output_values": 519168,
+          "scalar_checked_values": 519168,
+          "useful_macs": 112140288,
+          "input_int8_sha256": "6b5c3ce7327aa08681cef573d8b08d502f7bc7338555b96f3648ba860b19a69f",
+          "weight_int8_sha256": "3e79690afbd80c8ed44c0d67ffda3e311a5a88b6f10248fe78b4f940d73403d9",
+          "output_int32_sha256": "09273f42ef666413075ac5147f3365c7d7b425d9202ce95238129231e4f0d545"
+        },
+        {
+          "name": "backbone.backbone.dark2.1.conv1.conv",
+          "input_chw": [
+            48,
+            104,
+            104
+          ],
+          "output_chw": [
+            24,
+            104,
+            104
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 432750,
+          "rtl_mac_steps": 129792,
+          "rtl_active_cycles": 302848,
+          "tile_commands": 98,
+          "output_values": 259584,
+          "scalar_checked_values": 259584,
+          "useful_macs": 12460032,
+          "input_int8_sha256": "45cce43713e33a57ba51c29935b9ac0c043c49b894142870ae4e6d5f8b325b1f",
+          "weight_int8_sha256": "b71eea0f990f5064fac95b5d06025a40d26655b9a07f51947eaed0a1a113ae13",
+          "output_int32_sha256": "4991ee39ae9eb123da83136a3d50f2d74574283e01311d4b1a0a08cae34482e3"
+        },
+        {
+          "name": "backbone.backbone.dark2.1.conv2.conv",
+          "input_chw": [
+            48,
+            104,
+            104
+          ],
+          "output_chw": [
+            24,
+            104,
+            104
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 432750,
+          "rtl_mac_steps": 129792,
+          "rtl_active_cycles": 302848,
+          "tile_commands": 98,
+          "output_values": 259584,
+          "scalar_checked_values": 259584,
+          "useful_macs": 12460032,
+          "input_int8_sha256": "45cce43713e33a57ba51c29935b9ac0c043c49b894142870ae4e6d5f8b325b1f",
+          "weight_int8_sha256": "522a388ca032bb19b50b6940db06934673ba13d054c87d3b26666f7bcf9b4dac",
+          "output_int32_sha256": "468d43da86578945201325b9baa9322b1337ff8c9a8726348cddabd4ccf1ec96"
+        },
+        {
+          "name": "backbone.backbone.dark2.1.m.0.conv1.conv",
+          "input_chw": [
+            24,
+            104,
+            104
+          ],
+          "output_chw": [
+            24,
+            104,
+            104
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 302952,
+          "rtl_mac_steps": 64896,
+          "rtl_active_cycles": 237952,
+          "tile_commands": 98,
+          "output_values": 259584,
+          "scalar_checked_values": 259584,
+          "useful_macs": 6230016,
+          "input_int8_sha256": "cf1e73c8f6dd60e2c961f23bf00c10ca41763d02cb42abf9c0723380082f2359",
+          "weight_int8_sha256": "f4f1fa0d502ed0004fc9322058074f97da50cfa3beef3fd1cb595f1d92fd527e",
+          "output_int32_sha256": "6a52c4f488c3442782031de0443b5a602ede7f5f3401b0a95b89819ef5a7a8c2"
+        },
+        {
+          "name": "backbone.backbone.dark2.1.m.0.conv2.conv",
+          "input_chw": [
+            24,
+            104,
+            104
+          ],
+          "output_chw": [
+            24,
+            104,
+            104
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 843702,
+          "rtl_mac_steps": 584064,
+          "rtl_active_cycles": 757120,
+          "tile_commands": 128,
+          "output_values": 259584,
+          "scalar_checked_values": 259584,
+          "useful_macs": 56070144,
+          "input_int8_sha256": "87e0cba25ac10a4f3bcf4a35e7fac7b46ce160e0bf4b914ab2306f3d84af2b6b",
+          "weight_int8_sha256": "074100922f08b4ed2449016d5dcf2deb544789d10d931848a33d961d0a2d3f64",
+          "output_int32_sha256": "03b376ec33f4fb1797b333535bd32883da98a2bd90a642785e4ce2074f1f46ee"
+        },
+        {
+          "name": "backbone.backbone.dark2.1.conv3.conv",
+          "input_chw": [
+            48,
+            104,
+            104
+          ],
+          "output_chw": [
+            48,
+            104,
+            104
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 649125,
+          "rtl_mac_steps": 194688,
+          "rtl_active_cycles": 454272,
+          "tile_commands": 147,
+          "output_values": 519168,
+          "scalar_checked_values": 519168,
+          "useful_macs": 24920064,
+          "input_int8_sha256": "3574c9501f286a69f3f70140d13e513e18e1b51a95e7474e0c91c3d566ade410",
+          "weight_int8_sha256": "3d3421c20c5e13c16d2822a22fc3fd44f6cd1af10ad67d79fd14dbf737dd1ec2",
+          "output_int32_sha256": "0323f53dc6e86956191f4c48cb25ad624af8ae38a47f9f74fb5310a30242a1e5"
+        },
+        {
+          "name": "backbone.backbone.dark3.0.conv",
+          "input_chw": [
+            48,
+            104,
+            104
+          ],
+          "output_chw": [
+            96,
+            52,
+            52
+          ],
+          "kernel": 3,
+          "stride": 2,
+          "padding": 1,
+          "rtl_clock_cycles": 1458180,
+          "rtl_mac_steps": 876096,
+          "rtl_active_cycles": 1005888,
+          "tile_commands": 384,
+          "output_values": 259584,
+          "scalar_checked_values": 259584,
+          "useful_macs": 112140288,
+          "input_int8_sha256": "6b02cba17019ea36c5ee7311e0b6f566397eb6316cfd62f6cc82927faca833a1",
+          "weight_int8_sha256": "d705f8abca6e31e73f16c8bc01efbfe5c0cea3c21e7cd6090ac67bc3a481f971",
+          "output_int32_sha256": "48104097699e967ebd0afe07e5539848a0c52982f0f4cd91a730336b171170d6"
+        },
+        {
+          "name": "backbone.backbone.dark3.1.conv1.conv",
+          "input_chw": [
+            96,
+            52,
+            52
+          ],
+          "output_chw": [
+            48,
+            52,
+            52
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 259668,
+          "rtl_mac_steps": 97344,
+          "rtl_active_cycles": 162240,
+          "tile_commands": 48,
+          "output_values": 129792,
+          "scalar_checked_values": 129792,
+          "useful_macs": 12460032,
+          "input_int8_sha256": "070d56b79aeb29c20b9082af882eb45fb479685f954815c48251f715a0891cdf",
+          "weight_int8_sha256": "fd42f466ae6ed254553440aa7ea1d385e70080f13cbaca7fe8d620a6d45cf490",
+          "output_int32_sha256": "ce1481396acd4e7174543ab2788814a2c4b2da2b00069ddb179b879807613630"
+        },
+        {
+          "name": "backbone.backbone.dark3.1.conv2.conv",
+          "input_chw": [
+            96,
+            52,
+            52
+          ],
+          "output_chw": [
+            48,
+            52,
+            52
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 259668,
+          "rtl_mac_steps": 97344,
+          "rtl_active_cycles": 162240,
+          "tile_commands": 48,
+          "output_values": 129792,
+          "scalar_checked_values": 129792,
+          "useful_macs": 12460032,
+          "input_int8_sha256": "070d56b79aeb29c20b9082af882eb45fb479685f954815c48251f715a0891cdf",
+          "weight_int8_sha256": "9dd71f1f407c43dc938706fe4af174b3f26bfc50789e81994ebaf7230fed55c4",
+          "output_int32_sha256": "1aa8a36c6c51975594d04d01a5f1981b60ba049ae6666f32dc493820653b94cd"
+        },
+        {
+          "name": "backbone.backbone.dark3.1.m.0.conv1.conv",
+          "input_chw": [
+            48,
+            52,
+            52
+          ],
+          "output_chw": [
+            48,
+            52,
+            52
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 162306,
+          "rtl_mac_steps": 48672,
+          "rtl_active_cycles": 113568,
+          "tile_commands": 48,
+          "output_values": 129792,
+          "scalar_checked_values": 129792,
+          "useful_macs": 6230016,
+          "input_int8_sha256": "f92f6d2305c83896b4703ba2f2cd20bd0c1cbf9afc4bd29758158df36a24d0cc",
+          "weight_int8_sha256": "e5d50e5c0fba2a0fb9556ce800d23a611a2ee7b57ddcc78920844aded4cefc2f",
+          "output_int32_sha256": "773ff9638795d09cfd4928ed221a0724a245286cb0096d42f834eea99b6d4ed3"
+        },
+        {
+          "name": "backbone.backbone.dark3.1.m.0.conv2.conv",
+          "input_chw": [
+            48,
+            52,
+            52
+          ],
+          "output_chw": [
+            48,
+            52,
+            52
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 567954,
+          "rtl_mac_steps": 438048,
+          "rtl_active_cycles": 502944,
+          "tile_commands": 48,
+          "output_values": 129792,
+          "scalar_checked_values": 129792,
+          "useful_macs": 56070144,
+          "input_int8_sha256": "a7fdf3ec544a8a15526c5dd5ae09954622b7d96f1950f15bb1d51f8a0fc8c4b2",
+          "weight_int8_sha256": "c22d778167d693ee53e2de25d9642cfa2bc0e828a3ffada0a632c252422f4a58",
+          "output_int32_sha256": "cc37ac73711193a5142afdce1d876569617ae07ac8cc959e9147e813f2810742"
+        },
+        {
+          "name": "backbone.backbone.dark3.1.m.1.conv1.conv",
+          "input_chw": [
+            48,
+            52,
+            52
+          ],
+          "output_chw": [
+            48,
+            52,
+            52
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 162306,
+          "rtl_mac_steps": 48672,
+          "rtl_active_cycles": 113568,
+          "tile_commands": 48,
+          "output_values": 129792,
+          "scalar_checked_values": 129792,
+          "useful_macs": 6230016,
+          "input_int8_sha256": "a7bc83b8072079cd7360e67595a986d9ae50082a5ada3da114463865a7c8da6f",
+          "weight_int8_sha256": "62af40a6c409f7191ea34abe80758c93da5167c5d0d88c9d02e56d71219b6cea",
+          "output_int32_sha256": "54d16a56af65cf3f18f8d96ddbaae65c9c159363f8348f8d2ffec8bc97c935d3"
+        },
+        {
+          "name": "backbone.backbone.dark3.1.m.1.conv2.conv",
+          "input_chw": [
+            48,
+            52,
+            52
+          ],
+          "output_chw": [
+            48,
+            52,
+            52
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 567954,
+          "rtl_mac_steps": 438048,
+          "rtl_active_cycles": 502944,
+          "tile_commands": 48,
+          "output_values": 129792,
+          "scalar_checked_values": 129792,
+          "useful_macs": 56070144,
+          "input_int8_sha256": "ffacef024c49c12d6180a9af581466c30578f4b0a82c54f6ee9f4616a02b9420",
+          "weight_int8_sha256": "7af9a91eae5a4dfbed09074b1d8484396808ee775fc3e2dc6f69120c09c3bb4b",
+          "output_int32_sha256": "902da91c6ea251a770019596614db7b8b4180ed5c087af53d3626b1cf050c7b6"
+        },
+        {
+          "name": "backbone.backbone.dark3.1.m.2.conv1.conv",
+          "input_chw": [
+            48,
+            52,
+            52
+          ],
+          "output_chw": [
+            48,
+            52,
+            52
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 162306,
+          "rtl_mac_steps": 48672,
+          "rtl_active_cycles": 113568,
+          "tile_commands": 48,
+          "output_values": 129792,
+          "scalar_checked_values": 129792,
+          "useful_macs": 6230016,
+          "input_int8_sha256": "aec5c9c6b24cc70e38f1f1fe54c8df1df926015bc668907bf8cc5322189db979",
+          "weight_int8_sha256": "d2154e990abe1bfbee597eefd8e66064414026bd833805ed3696f7fc924d6458",
+          "output_int32_sha256": "ee12a2d4fc9e5ba2606f17abb442218c7ab18da4f2c716fb0ae24e6326c06902"
+        },
+        {
+          "name": "backbone.backbone.dark3.1.m.2.conv2.conv",
+          "input_chw": [
+            48,
+            52,
+            52
+          ],
+          "output_chw": [
+            48,
+            52,
+            52
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 567954,
+          "rtl_mac_steps": 438048,
+          "rtl_active_cycles": 502944,
+          "tile_commands": 48,
+          "output_values": 129792,
+          "scalar_checked_values": 129792,
+          "useful_macs": 56070144,
+          "input_int8_sha256": "c3a5ee73373fdcdc080a3ab9c94a209a5b04924c00dbeea8cda264ed0df56b95",
+          "weight_int8_sha256": "a0fb66a61ff06cad85936aeb71df02abbe4a3e62ee16ebaecb5a821ce747d86d",
+          "output_int32_sha256": "9a5009fa2efd7aab97881c7e918e2635241f4ee02507902ab855e6dadfcf4b8f"
+        },
+        {
+          "name": "backbone.backbone.dark3.1.conv3.conv",
+          "input_chw": [
+            96,
+            52,
+            52
+          ],
+          "output_chw": [
+            96,
+            52,
+            52
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 519336,
+          "rtl_mac_steps": 194688,
+          "rtl_active_cycles": 324480,
+          "tile_commands": 96,
+          "output_values": 259584,
+          "scalar_checked_values": 259584,
+          "useful_macs": 24920064,
+          "input_int8_sha256": "b2cd3f88eebccec5de6dbd77510a76f653e54d5c8a47907be01fd3db0282c35f",
+          "weight_int8_sha256": "41c834f4cd3a9ec75f334e72e51dffe922c5bf52ace7cac21f32421bfba31d24",
+          "output_int32_sha256": "5c34173a86fee86e888d334961bf1fc51d09cb4be60f5a0aed8f04cd6d1518f8"
+        },
+        {
+          "name": "backbone.backbone.dark4.0.conv",
+          "input_chw": [
+            96,
+            52,
+            52
+          ],
+          "output_chw": [
+            192,
+            26,
+            26
+          ],
+          "kernel": 3,
+          "stride": 2,
+          "padding": 1,
+          "rtl_clock_cycles": 1394064,
+          "rtl_mac_steps": 876096,
+          "rtl_active_cycles": 940992,
+          "tile_commands": 192,
+          "output_values": 129792,
+          "scalar_checked_values": 129792,
+          "useful_macs": 112140288,
+          "input_int8_sha256": "9f4a22e90eca26a58a372525fe43ed26f51f5f461f30e4287a362e02518f308f",
+          "weight_int8_sha256": "ee256c0a5c127c61cbde8fe8df4eaea6c0d4e053e26c0daba2b1a66bfc62f030",
+          "output_int32_sha256": "0825e0236ff046804d3b4517e248515c7511c19276d750ab2e88783cbbd659c9"
+        },
+        {
+          "name": "backbone.backbone.dark4.1.conv1.conv",
+          "input_chw": [
+            192,
+            26,
+            26
+          ],
+          "output_chw": [
+            96,
+            26,
+            26
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 227304,
+          "rtl_mac_steps": 97344,
+          "rtl_active_cycles": 129792,
+          "tile_commands": 24,
+          "output_values": 64896,
+          "scalar_checked_values": 64896,
+          "useful_macs": 12460032,
+          "input_int8_sha256": "4be12a8b1f538fb7095af7f6a86864130eccf13bd1d87b9cdc389cc1dabf9737",
+          "weight_int8_sha256": "2f97b09ec4fbef5ac70e3d3eb3fafe352db42aad0549b2f4cc78b5e986716439",
+          "output_int32_sha256": "e87014b1842576b5d954dad4d9650203a05324c26b6b7e5597baae608416b327"
+        },
+        {
+          "name": "backbone.backbone.dark4.1.conv2.conv",
+          "input_chw": [
+            192,
+            26,
+            26
+          ],
+          "output_chw": [
+            96,
+            26,
+            26
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 227304,
+          "rtl_mac_steps": 97344,
+          "rtl_active_cycles": 129792,
+          "tile_commands": 24,
+          "output_values": 64896,
+          "scalar_checked_values": 64896,
+          "useful_macs": 12460032,
+          "input_int8_sha256": "4be12a8b1f538fb7095af7f6a86864130eccf13bd1d87b9cdc389cc1dabf9737",
+          "weight_int8_sha256": "c09f09e7215bcb7105d8d0269e883f7bf21fb672b1903cfe54f2c4cb280c5413",
+          "output_int32_sha256": "4ca2f9cb7df608807225378cf77a013bd152e031c1e6162324f5a5d8ee9d5506"
+        },
+        {
+          "name": "backbone.backbone.dark4.1.m.0.conv1.conv",
+          "input_chw": [
+            96,
+            26,
+            26
+          ],
+          "output_chw": [
+            96,
+            26,
+            26
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 129888,
+          "rtl_mac_steps": 48672,
+          "rtl_active_cycles": 81120,
+          "tile_commands": 24,
+          "output_values": 64896,
+          "scalar_checked_values": 64896,
+          "useful_macs": 6230016,
+          "input_int8_sha256": "83b3a80a024a363286e7cac27e3555e41276aa776e006c7bb46dd3d9dfd2a949",
+          "weight_int8_sha256": "e462fa18fd932c01734b0d729ee0463ed6ecaf021b6a964dce7bf71dce61abb0",
+          "output_int32_sha256": "235e8682ac294e32454697c3ef8e95821f76fc64a426f4132c2beaa2461bb70d"
+        },
+        {
+          "name": "backbone.backbone.dark4.1.m.0.conv2.conv",
+          "input_chw": [
+            96,
+            26,
+            26
+          ],
+          "output_chw": [
+            96,
+            26,
+            26
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 535968,
+          "rtl_mac_steps": 438048,
+          "rtl_active_cycles": 470496,
+          "tile_commands": 24,
+          "output_values": 64896,
+          "scalar_checked_values": 64896,
+          "useful_macs": 56070144,
+          "input_int8_sha256": "a42b22866729c0f6d2f81165c66d70c77dfdde753bfe83d1f3bff0898ff6cc98",
+          "weight_int8_sha256": "4ac287702432839683b3fd0909d944ae987171581705ed6e65c5cc8c9853b7fb",
+          "output_int32_sha256": "cabcacc0e55dad67d9ead041e5dda2ec525621e11ea39a951c6aed05b0c4034c"
+        },
+        {
+          "name": "backbone.backbone.dark4.1.m.1.conv1.conv",
+          "input_chw": [
+            96,
+            26,
+            26
+          ],
+          "output_chw": [
+            96,
+            26,
+            26
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 129888,
+          "rtl_mac_steps": 48672,
+          "rtl_active_cycles": 81120,
+          "tile_commands": 24,
+          "output_values": 64896,
+          "scalar_checked_values": 64896,
+          "useful_macs": 6230016,
+          "input_int8_sha256": "46d2d942abe157e996f7b8a9bdc8a9907fa6176f9035440e3be68bf0aa863b0b",
+          "weight_int8_sha256": "dd1ead0aeeb049f1f4d61c51e1a68511751596c2d7b2bc52203d2e777badebb5",
+          "output_int32_sha256": "db7ddad2eb4285b78e51792593f628c1dcbb9e3d14842c906da0200207a52c89"
+        },
+        {
+          "name": "backbone.backbone.dark4.1.m.1.conv2.conv",
+          "input_chw": [
+            96,
+            26,
+            26
+          ],
+          "output_chw": [
+            96,
+            26,
+            26
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 535968,
+          "rtl_mac_steps": 438048,
+          "rtl_active_cycles": 470496,
+          "tile_commands": 24,
+          "output_values": 64896,
+          "scalar_checked_values": 64896,
+          "useful_macs": 56070144,
+          "input_int8_sha256": "2713fd7eafe143944ed6138075902ce76ceecb5333d6bc7e30d7a8d9885d3b8c",
+          "weight_int8_sha256": "df2842f04d754c59eb1595a14439e8c386808aeed045f415b2ec305107c9413c",
+          "output_int32_sha256": "741bda3e63885dada64e9bef40f13e77f93bab471a57ff7f21b064cabd353541"
+        },
+        {
+          "name": "backbone.backbone.dark4.1.m.2.conv1.conv",
+          "input_chw": [
+            96,
+            26,
+            26
+          ],
+          "output_chw": [
+            96,
+            26,
+            26
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 129888,
+          "rtl_mac_steps": 48672,
+          "rtl_active_cycles": 81120,
+          "tile_commands": 24,
+          "output_values": 64896,
+          "scalar_checked_values": 64896,
+          "useful_macs": 6230016,
+          "input_int8_sha256": "75af3f06e10515ba05a448ca87ec0c6d9ba43e9f05efd0c4d5cc0b1ec9703352",
+          "weight_int8_sha256": "fce488b1eea15f81f037d1b4d2ef9576c445780e769fe61ef9c177ee3165167b",
+          "output_int32_sha256": "36b9cc9f48c01609cbf61eac96802f31d9abda8ede3835d09a514d3c29a26881"
+        },
+        {
+          "name": "backbone.backbone.dark4.1.m.2.conv2.conv",
+          "input_chw": [
+            96,
+            26,
+            26
+          ],
+          "output_chw": [
+            96,
+            26,
+            26
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 535968,
+          "rtl_mac_steps": 438048,
+          "rtl_active_cycles": 470496,
+          "tile_commands": 24,
+          "output_values": 64896,
+          "scalar_checked_values": 64896,
+          "useful_macs": 56070144,
+          "input_int8_sha256": "7dc674466be81f265e75a34dada55f756b1c566d6e09be23dc5e4ad5adacd35c",
+          "weight_int8_sha256": "051d3d23e1df6563db9dc3cc1fd48a1d5b3c9011625e4594097f32b43ca4251b",
+          "output_int32_sha256": "2a2efeb9241091840915bc3e4bd8d5834a6440d80f275582891400e567ec9e65"
+        },
+        {
+          "name": "backbone.backbone.dark4.1.conv3.conv",
+          "input_chw": [
+            192,
+            26,
+            26
+          ],
+          "output_chw": [
+            192,
+            26,
+            26
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 454608,
+          "rtl_mac_steps": 194688,
+          "rtl_active_cycles": 259584,
+          "tile_commands": 48,
+          "output_values": 129792,
+          "scalar_checked_values": 129792,
+          "useful_macs": 24920064,
+          "input_int8_sha256": "8511e98e60a21cb2f7421d93ac69bb651708df2f607fc8ceb4ee8918ffd502b1",
+          "weight_int8_sha256": "1f79d66a111f39918c39ac3eef9f8fdbd813c6738158601839730a632a6b1166",
+          "output_int32_sha256": "13dc0820b490b87df6a4cfd3c99f7f553004f1c17fe21f2f8f137bdad527bb45"
+        },
+        {
+          "name": "backbone.backbone.dark5.0.conv",
+          "input_chw": [
+            192,
+            26,
+            26
+          ],
+          "output_chw": [
+            384,
+            13,
+            13
+          ],
+          "kernel": 3,
+          "stride": 2,
+          "padding": 1,
+          "rtl_clock_cycles": 1365408,
+          "rtl_mac_steps": 876096,
+          "rtl_active_cycles": 908544,
+          "tile_commands": 96,
+          "output_values": 64896,
+          "scalar_checked_values": 64896,
+          "useful_macs": 112140288,
+          "input_int8_sha256": "5f2cebe434683c5fc13009acefe0c77fc9f6ea55a3218ae294955c61952f0724",
+          "weight_int8_sha256": "bd7dd1b9513cbe8badc92220fb28a9f805254fe20da5d20b8deb381b02a215ce",
+          "output_int32_sha256": "441858592f385d9703041a387f7b8619f2f9e81d294d1a3b1713ae994b1ac9e6"
+        },
+        {
+          "name": "backbone.backbone.dark5.1.conv1.conv",
+          "input_chw": [
+            384,
+            13,
+            13
+          ],
+          "output_chw": [
+            192,
+            13,
+            13
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 211500,
+          "rtl_mac_steps": 97344,
+          "rtl_active_cycles": 113568,
+          "tile_commands": 12,
+          "output_values": 32448,
+          "scalar_checked_values": 32448,
+          "useful_macs": 12460032,
+          "input_int8_sha256": "51e76d4036529b497aefd960cf947c3c9084e1546adf97b89c667cc504cae28f",
+          "weight_int8_sha256": "fbb713f8c8597ec383c3036ed45408cdc987f6a15c07ad41cd07dcd4fff3b7a8",
+          "output_int32_sha256": "bbb8a895257456e5847a16fd8cd3d0ab392b00e5540ffdbbc9cf6843cb1f70c5"
+        },
+        {
+          "name": "backbone.backbone.dark5.1.conv2.conv",
+          "input_chw": [
+            768,
+            13,
+            13
+          ],
+          "output_chw": [
+            384,
+            13,
+            13
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 813528,
+          "rtl_mac_steps": 389376,
+          "rtl_active_cycles": 421824,
+          "tile_commands": 24,
+          "output_values": 64896,
+          "scalar_checked_values": 64896,
+          "useful_macs": 49840128,
+          "input_int8_sha256": "d58ebc6f8b341238cb3ae546b6887a98db96a606c950039a6b88d4682f2c91f0",
+          "weight_int8_sha256": "b5c90e1dedf1ab0ac2a034fc34043e523efff0ea01ff1e34b91a5f821cc29885",
+          "output_int32_sha256": "d58ca43eacd5c5b0135d62e12af0e2b206ab94fe74e1149612db5789e284631b"
+        },
+        {
+          "name": "backbone.backbone.dark5.2.conv1.conv",
+          "input_chw": [
+            384,
+            13,
+            13
+          ],
+          "output_chw": [
+            192,
+            13,
+            13
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 211500,
+          "rtl_mac_steps": 97344,
+          "rtl_active_cycles": 113568,
+          "tile_commands": 12,
+          "output_values": 32448,
+          "scalar_checked_values": 32448,
+          "useful_macs": 12460032,
+          "input_int8_sha256": "b35040080349e64a20934df74bc11aca49269317a17185cf923f69195ff774b2",
+          "weight_int8_sha256": "8d1dc0c245ebd0204f720611dc043eacdd42e9a0103c467f0cbd07aaed5c6737",
+          "output_int32_sha256": "b04dfeaa5f2857560a61aa6160430566b21e08ec27c7d1871bdfe107274bccdb"
+        },
+        {
+          "name": "backbone.backbone.dark5.2.conv2.conv",
+          "input_chw": [
+            384,
+            13,
+            13
+          ],
+          "output_chw": [
+            192,
+            13,
+            13
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 211500,
+          "rtl_mac_steps": 97344,
+          "rtl_active_cycles": 113568,
+          "tile_commands": 12,
+          "output_values": 32448,
+          "scalar_checked_values": 32448,
+          "useful_macs": 12460032,
+          "input_int8_sha256": "b35040080349e64a20934df74bc11aca49269317a17185cf923f69195ff774b2",
+          "weight_int8_sha256": "cd1f32962019b220cbcab514db8b70b2de5fd72257ddbab7f25846273130a448",
+          "output_int32_sha256": "7dcd7eb762db18a19d90e86d0a38ebd6ea7fd39a5033964e9c0f7a986bbb003a"
+        },
+        {
+          "name": "backbone.backbone.dark5.2.m.0.conv1.conv",
+          "input_chw": [
+            192,
+            13,
+            13
+          ],
+          "output_chw": [
+            192,
+            13,
+            13
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 113868,
+          "rtl_mac_steps": 48672,
+          "rtl_active_cycles": 64896,
+          "tile_commands": 12,
+          "output_values": 32448,
+          "scalar_checked_values": 32448,
+          "useful_macs": 6230016,
+          "input_int8_sha256": "83591c7b3917a645ef4cbe11f66dc448c7cf96ed127947ecc3535006f524e7d8",
+          "weight_int8_sha256": "c8bd0d81b67e8dd33f7fae350a016f5f8e7648e27d22343c8c6451696ee42d56",
+          "output_int32_sha256": "b56b4481b2f06f07c413dbf684155d850b53ca44651fd78547fc1a60f432620a"
+        },
+        {
+          "name": "backbone.backbone.dark5.2.m.0.conv2.conv",
+          "input_chw": [
+            192,
+            13,
+            13
+          ],
+          "output_chw": [
+            192,
+            13,
+            13
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 521676,
+          "rtl_mac_steps": 438048,
+          "rtl_active_cycles": 454272,
+          "tile_commands": 12,
+          "output_values": 32448,
+          "scalar_checked_values": 32448,
+          "useful_macs": 56070144,
+          "input_int8_sha256": "e0cb9fa43daf0f6ca70fa43b425ecd82c7d5a7617c69bcd8d3b336108ae3ec95",
+          "weight_int8_sha256": "ad1afecbe27b92581a7921ae7279f201cdc9fda80b118236d6d65d6b85835ba6",
+          "output_int32_sha256": "06bb054c450298a9a4050e2d13588a6cf5be255aa10cdd3bb6d65f3ba27a573f"
+        },
+        {
+          "name": "backbone.backbone.dark5.2.conv3.conv",
+          "input_chw": [
+            384,
+            13,
+            13
+          ],
+          "output_chw": [
+            384,
+            13,
+            13
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 423000,
+          "rtl_mac_steps": 194688,
+          "rtl_active_cycles": 227136,
+          "tile_commands": 24,
+          "output_values": 64896,
+          "scalar_checked_values": 64896,
+          "useful_macs": 24920064,
+          "input_int8_sha256": "2be5270d8d0648657f064e80542709b117b9cea3f2649ddda6bf0a5ea8d02df5",
+          "weight_int8_sha256": "38515be14e795b5acfa45463c5afb96b8e121c6e532455d8d27b6cef5164165b",
+          "output_int32_sha256": "5a7df0981dc9861b06e3419ce6a46f60ab2230c6ab4e6ac07add6c5c382b6a55"
+        },
+        {
+          "name": "backbone.lateral_conv0.conv",
+          "input_chw": [
+            384,
+            13,
+            13
+          ],
+          "output_chw": [
+            192,
+            13,
+            13
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 211500,
+          "rtl_mac_steps": 97344,
+          "rtl_active_cycles": 113568,
+          "tile_commands": 12,
+          "output_values": 32448,
+          "scalar_checked_values": 32448,
+          "useful_macs": 12460032,
+          "input_int8_sha256": "3f708fbb7268f289630f58650016fc94392459c0fb31746e28bef76800cd7bb3",
+          "weight_int8_sha256": "c679a872c75bd145a5359f7edb52b923d524da48ba8c5bade57c77aa200a8bc9",
+          "output_int32_sha256": "5a800cffbbc68b43cfbd2ae68b3ae59d9c9c7cd39d1a014492936867636d8d13"
+        },
+        {
+          "name": "backbone.C3_p4.conv1.conv",
+          "input_chw": [
+            384,
+            26,
+            26
+          ],
+          "output_chw": [
+            96,
+            26,
+            26
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 422136,
+          "rtl_mac_steps": 194688,
+          "rtl_active_cycles": 227136,
+          "tile_commands": 24,
+          "output_values": 64896,
+          "scalar_checked_values": 64896,
+          "useful_macs": 24920064,
+          "input_int8_sha256": "8eb767914c0caa7800ca836bb6b209fe562c120bdf50175be93a2606483fadbd",
+          "weight_int8_sha256": "57a5578b73306080cdb908b59b565a71524902299438b7e0fb7d309fca464fe2",
+          "output_int32_sha256": "63fcf0370840107bdd71ab178951ca4e704e6f6b97b5066ea28700967a5d1568"
+        },
+        {
+          "name": "backbone.C3_p4.conv2.conv",
+          "input_chw": [
+            384,
+            26,
+            26
+          ],
+          "output_chw": [
+            96,
+            26,
+            26
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 422136,
+          "rtl_mac_steps": 194688,
+          "rtl_active_cycles": 227136,
+          "tile_commands": 24,
+          "output_values": 64896,
+          "scalar_checked_values": 64896,
+          "useful_macs": 24920064,
+          "input_int8_sha256": "8eb767914c0caa7800ca836bb6b209fe562c120bdf50175be93a2606483fadbd",
+          "weight_int8_sha256": "ef143be58d1ac0abdb696b3bd1e2b1ba6ce391eea738d5fbb48f709c4e888922",
+          "output_int32_sha256": "4f7e47e7833d8b85f49725f3f1896cd188754f5b9f4891861bb392ec5f9228c8"
+        },
+        {
+          "name": "backbone.C3_p4.m.0.conv1.conv",
+          "input_chw": [
+            96,
+            26,
+            26
+          ],
+          "output_chw": [
+            96,
+            26,
+            26
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 129888,
+          "rtl_mac_steps": 48672,
+          "rtl_active_cycles": 81120,
+          "tile_commands": 24,
+          "output_values": 64896,
+          "scalar_checked_values": 64896,
+          "useful_macs": 6230016,
+          "input_int8_sha256": "0dac4a7e312a510cb95d3d4b651900c94c12e00c6480b6b5775756c95fa01fc2",
+          "weight_int8_sha256": "7ff17492c9e576ad1bb99bf372945b76709e2e12ccf11be320b76027682ebb8c",
+          "output_int32_sha256": "fb8fa113c42de4da5733f58c2a9d877efd706ffc677ea438b953860b459763fe"
+        },
+        {
+          "name": "backbone.C3_p4.m.0.conv2.conv",
+          "input_chw": [
+            96,
+            26,
+            26
+          ],
+          "output_chw": [
+            96,
+            26,
+            26
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 535968,
+          "rtl_mac_steps": 438048,
+          "rtl_active_cycles": 470496,
+          "tile_commands": 24,
+          "output_values": 64896,
+          "scalar_checked_values": 64896,
+          "useful_macs": 56070144,
+          "input_int8_sha256": "e68ea619f6bcabec9c04af1a8c8912d6301dc53a148672f244a5261c82277fb3",
+          "weight_int8_sha256": "bc44ea5b5cc1a836d56585d976b6e37c5b828045f2a2d06f2472447777c39653",
+          "output_int32_sha256": "b7c9714beb2a26561cc44ceef418ac59369beda31eedd878ee6c09d2a62034b6"
+        },
+        {
+          "name": "backbone.C3_p4.conv3.conv",
+          "input_chw": [
+            192,
+            26,
+            26
+          ],
+          "output_chw": [
+            192,
+            26,
+            26
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 454608,
+          "rtl_mac_steps": 194688,
+          "rtl_active_cycles": 259584,
+          "tile_commands": 48,
+          "output_values": 129792,
+          "scalar_checked_values": 129792,
+          "useful_macs": 24920064,
+          "input_int8_sha256": "a29f2e9e570e75174a7057cab1a395aa562c4f95d89c18b2d0f19375d4f30552",
+          "weight_int8_sha256": "fb9e01ba08ee73d072adbab2ac64af8b31b7f746d5a0e643754ce0ce0d9e7fe1",
+          "output_int32_sha256": "f904606b96df822ad93566b59f174a10ac2a06db29588ac156548056a6326f65"
+        },
+        {
+          "name": "backbone.reduce_conv1.conv",
+          "input_chw": [
+            192,
+            26,
+            26
+          ],
+          "output_chw": [
+            96,
+            26,
+            26
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 227304,
+          "rtl_mac_steps": 97344,
+          "rtl_active_cycles": 129792,
+          "tile_commands": 24,
+          "output_values": 64896,
+          "scalar_checked_values": 64896,
+          "useful_macs": 12460032,
+          "input_int8_sha256": "d127dbc871ae71fa1a7c9a2171ab0a94a874ceae63e59479475fc94ca9c3d09e",
+          "weight_int8_sha256": "e88952ac021e10fcb6092e24e66a537eb428faa20ace833f0b6d2cb9ebf13504",
+          "output_int32_sha256": "de67bbdf17808f00a4ca776115223a1979738e0dfbeccdb9551dfc2bc4e5b58a"
+        },
+        {
+          "name": "backbone.C3_p3.conv1.conv",
+          "input_chw": [
+            192,
+            52,
+            52
+          ],
+          "output_chw": [
+            48,
+            52,
+            52
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 454392,
+          "rtl_mac_steps": 194688,
+          "rtl_active_cycles": 259584,
+          "tile_commands": 48,
+          "output_values": 129792,
+          "scalar_checked_values": 129792,
+          "useful_macs": 24920064,
+          "input_int8_sha256": "d20111cfb96aabcc9362d007ab4f7795df996d6272efa0970c178e05d4b4afcb",
+          "weight_int8_sha256": "c5953de793c7e170b77a4cc531cc0efd48f1f492b53f448705e14a3c2648c2bd",
+          "output_int32_sha256": "a75e59625156ef98bab3d42b00410ad2d6f99d0fcd0103c1eb1be4337a9198ca"
+        },
+        {
+          "name": "backbone.C3_p3.conv2.conv",
+          "input_chw": [
+            192,
+            52,
+            52
+          ],
+          "output_chw": [
+            48,
+            52,
+            52
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 454392,
+          "rtl_mac_steps": 194688,
+          "rtl_active_cycles": 259584,
+          "tile_commands": 48,
+          "output_values": 129792,
+          "scalar_checked_values": 129792,
+          "useful_macs": 24920064,
+          "input_int8_sha256": "d20111cfb96aabcc9362d007ab4f7795df996d6272efa0970c178e05d4b4afcb",
+          "weight_int8_sha256": "9a08fd46076c1cd2025b2277a43f13f666e97494933fda8a1209b4306dea835a",
+          "output_int32_sha256": "80d27ee7c6ef5967235347f627240a21526ac53c30f2c3310454225bf8af2fb9"
+        },
+        {
+          "name": "backbone.C3_p3.m.0.conv1.conv",
+          "input_chw": [
+            48,
+            52,
+            52
+          ],
+          "output_chw": [
+            48,
+            52,
+            52
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 162306,
+          "rtl_mac_steps": 48672,
+          "rtl_active_cycles": 113568,
+          "tile_commands": 48,
+          "output_values": 129792,
+          "scalar_checked_values": 129792,
+          "useful_macs": 6230016,
+          "input_int8_sha256": "48f5004dc6a2d9450bbffeb103e1f57c79a99987893ca0413ca4846a1dd99902",
+          "weight_int8_sha256": "7c77394c1251f68fb555fd4d3d212c0f93927b6d906bd2731b9cfca9075dbbf9",
+          "output_int32_sha256": "4aa7482ace8ac2ad48be20a88710aa080a802fb6c81227977435b8bc014f1286"
+        },
+        {
+          "name": "backbone.C3_p3.m.0.conv2.conv",
+          "input_chw": [
+            48,
+            52,
+            52
+          ],
+          "output_chw": [
+            48,
+            52,
+            52
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 567954,
+          "rtl_mac_steps": 438048,
+          "rtl_active_cycles": 502944,
+          "tile_commands": 48,
+          "output_values": 129792,
+          "scalar_checked_values": 129792,
+          "useful_macs": 56070144,
+          "input_int8_sha256": "95d83ea75a9fa04676bbb9d3af48a606aa692ebe4a20b512bbff9a892f344846",
+          "weight_int8_sha256": "f3838a3d49c111ad8f7f5cfd2ec5f47e05e2a2afd962b2743467deb8a9b89ea9",
+          "output_int32_sha256": "c14bb082133a7742a5ff10ae2adbd9f1c7c25ed7c41bce526507761744c24148"
+        },
+        {
+          "name": "backbone.C3_p3.conv3.conv",
+          "input_chw": [
+            96,
+            52,
+            52
+          ],
+          "output_chw": [
+            96,
+            52,
+            52
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 519336,
+          "rtl_mac_steps": 194688,
+          "rtl_active_cycles": 324480,
+          "tile_commands": 96,
+          "output_values": 259584,
+          "scalar_checked_values": 259584,
+          "useful_macs": 24920064,
+          "input_int8_sha256": "f517314dcb23c64f36aa6a82e6da12b27712bcc700cf05552762a78e59042f9c",
+          "weight_int8_sha256": "8b13b06e19b838184c3475ddbd670b832d5a063a40adfd672c6604fc85d004f3",
+          "output_int32_sha256": "c3f89f391a64223ed613bc6e22c78687872419be6a3ce2f2fc0503610bcd465f"
+        },
+        {
+          "name": "backbone.bu_conv2.conv",
+          "input_chw": [
+            96,
+            52,
+            52
+          ],
+          "output_chw": [
+            96,
+            26,
+            26
+          ],
+          "kernel": 3,
+          "stride": 2,
+          "padding": 1,
+          "rtl_clock_cycles": 697032,
+          "rtl_mac_steps": 438048,
+          "rtl_active_cycles": 470496,
+          "tile_commands": 96,
+          "output_values": 64896,
+          "scalar_checked_values": 64896,
+          "useful_macs": 56070144,
+          "input_int8_sha256": "d141528ad5a4650162188f1e96d5374970cc65d0da4d4825f22c46e48ffb7470",
+          "weight_int8_sha256": "56e8c1aeb90bbc77909683169018cd66b0d0d0fff00fa6fcdf38090a8d84c2ce",
+          "output_int32_sha256": "d803285dcc4a037478194299a402dfb2f8bd7a4ba27d3ccfc836ec4534b38a4a"
+        },
+        {
+          "name": "backbone.C3_n3.conv1.conv",
+          "input_chw": [
+            192,
+            26,
+            26
+          ],
+          "output_chw": [
+            96,
+            26,
+            26
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 227304,
+          "rtl_mac_steps": 97344,
+          "rtl_active_cycles": 129792,
+          "tile_commands": 24,
+          "output_values": 64896,
+          "scalar_checked_values": 64896,
+          "useful_macs": 12460032,
+          "input_int8_sha256": "8c707d85968727494f5ce6143897d8a107450907a94ea9f41105bf0d01eb12cb",
+          "weight_int8_sha256": "7d5bfc30aef3e02dfa546ad79278b455eef71fcc29983be7695a16501881ec73",
+          "output_int32_sha256": "10b3df159b0a36389e75f4c957d9bd0573245b378157b65ac710384350e0de0d"
+        },
+        {
+          "name": "backbone.C3_n3.conv2.conv",
+          "input_chw": [
+            192,
+            26,
+            26
+          ],
+          "output_chw": [
+            96,
+            26,
+            26
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 227304,
+          "rtl_mac_steps": 97344,
+          "rtl_active_cycles": 129792,
+          "tile_commands": 24,
+          "output_values": 64896,
+          "scalar_checked_values": 64896,
+          "useful_macs": 12460032,
+          "input_int8_sha256": "8c707d85968727494f5ce6143897d8a107450907a94ea9f41105bf0d01eb12cb",
+          "weight_int8_sha256": "c7f733be12ecc157213b7022232186072c9f8f4bfca535bbca493b6cc3c855a7",
+          "output_int32_sha256": "9f74fdf04dfe6dc4bfc114079b03c701f9a3e65b0854bba6b1d60ea5ea14f5fb"
+        },
+        {
+          "name": "backbone.C3_n3.m.0.conv1.conv",
+          "input_chw": [
+            96,
+            26,
+            26
+          ],
+          "output_chw": [
+            96,
+            26,
+            26
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 129888,
+          "rtl_mac_steps": 48672,
+          "rtl_active_cycles": 81120,
+          "tile_commands": 24,
+          "output_values": 64896,
+          "scalar_checked_values": 64896,
+          "useful_macs": 6230016,
+          "input_int8_sha256": "dd83cc19c258e52e11aee9476fca5ddd8272443001a808155f4650218e59b542",
+          "weight_int8_sha256": "f3f0000260ae78930def638fce5224559c088979f25827f497092f645e8ad486",
+          "output_int32_sha256": "88088c335e5397c877ea4ab374c1a8e40cad84e6db3620545cbea859cf5a3015"
+        },
+        {
+          "name": "backbone.C3_n3.m.0.conv2.conv",
+          "input_chw": [
+            96,
+            26,
+            26
+          ],
+          "output_chw": [
+            96,
+            26,
+            26
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 535968,
+          "rtl_mac_steps": 438048,
+          "rtl_active_cycles": 470496,
+          "tile_commands": 24,
+          "output_values": 64896,
+          "scalar_checked_values": 64896,
+          "useful_macs": 56070144,
+          "input_int8_sha256": "e64668d5e84341a6bf38310f9bab6df0475f58b7341d5a073af5428aff2e9ee1",
+          "weight_int8_sha256": "92d934ca50c76e5e23b9f5bb3a6a9ea2412f229281c73d650a814a0cd7308818",
+          "output_int32_sha256": "8a660ca94629e48783aadf33fdbaedd68b723a72c451e6e3af69791f657b65da"
+        },
+        {
+          "name": "backbone.C3_n3.conv3.conv",
+          "input_chw": [
+            192,
+            26,
+            26
+          ],
+          "output_chw": [
+            192,
+            26,
+            26
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 454608,
+          "rtl_mac_steps": 194688,
+          "rtl_active_cycles": 259584,
+          "tile_commands": 48,
+          "output_values": 129792,
+          "scalar_checked_values": 129792,
+          "useful_macs": 24920064,
+          "input_int8_sha256": "46889f3e1b421001b14c3ef6ca7f6374dc787369fbdec5fc1df1d86187873b62",
+          "weight_int8_sha256": "12560c25b8d5f3ea02d8fa4a43a5c0f1379066945484e21d873b28420990fbb9",
+          "output_int32_sha256": "b921c69c607babbba191e1ea8df70df78fe18d0001e2ae7c171d56d53e2ffd87"
+        },
+        {
+          "name": "backbone.bu_conv1.conv",
+          "input_chw": [
+            192,
+            26,
+            26
+          ],
+          "output_chw": [
+            192,
+            13,
+            13
+          ],
+          "kernel": 3,
+          "stride": 2,
+          "padding": 1,
+          "rtl_clock_cycles": 682704,
+          "rtl_mac_steps": 438048,
+          "rtl_active_cycles": 454272,
+          "tile_commands": 48,
+          "output_values": 32448,
+          "scalar_checked_values": 32448,
+          "useful_macs": 56070144,
+          "input_int8_sha256": "b923684893cd21477771c560bc3557f941a1864a7c9dc9f3616b8b75752a735b",
+          "weight_int8_sha256": "10a36a16b7cc92b88331f9ba19dbef792f59e526996f0e91e3669609251db27b",
+          "output_int32_sha256": "712e476d559639e1ffaa3a8b14e8b13b79d92ad6d3207c9f8f7ad83e135b6def"
+        },
+        {
+          "name": "backbone.C3_n4.conv1.conv",
+          "input_chw": [
+            384,
+            13,
+            13
+          ],
+          "output_chw": [
+            192,
+            13,
+            13
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 211500,
+          "rtl_mac_steps": 97344,
+          "rtl_active_cycles": 113568,
+          "tile_commands": 12,
+          "output_values": 32448,
+          "scalar_checked_values": 32448,
+          "useful_macs": 12460032,
+          "input_int8_sha256": "cea5a53958b9128e9837a80500cd90669dd61ce2ffc2d66817303e2a94fd6352",
+          "weight_int8_sha256": "6ba8b331979c4ee853ab61ad25d04b17d7f2353022aec35fb37570c423862a46",
+          "output_int32_sha256": "e96a74c9090a7a30270d18cf866f52315f108ae5d95dd85358d47abf92a55cf7"
+        },
+        {
+          "name": "backbone.C3_n4.conv2.conv",
+          "input_chw": [
+            384,
+            13,
+            13
+          ],
+          "output_chw": [
+            192,
+            13,
+            13
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 211500,
+          "rtl_mac_steps": 97344,
+          "rtl_active_cycles": 113568,
+          "tile_commands": 12,
+          "output_values": 32448,
+          "scalar_checked_values": 32448,
+          "useful_macs": 12460032,
+          "input_int8_sha256": "cea5a53958b9128e9837a80500cd90669dd61ce2ffc2d66817303e2a94fd6352",
+          "weight_int8_sha256": "f73f12472628d2c5fb77137092fa97a4e54c75ac771e005fa985ac02b106a231",
+          "output_int32_sha256": "b49a5a91da1ecddc973dcbecc3be9296447c34a034d4a326d33833f562f15f0b"
+        },
+        {
+          "name": "backbone.C3_n4.m.0.conv1.conv",
+          "input_chw": [
+            192,
+            13,
+            13
+          ],
+          "output_chw": [
+            192,
+            13,
+            13
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 113868,
+          "rtl_mac_steps": 48672,
+          "rtl_active_cycles": 64896,
+          "tile_commands": 12,
+          "output_values": 32448,
+          "scalar_checked_values": 32448,
+          "useful_macs": 6230016,
+          "input_int8_sha256": "0ba79cd79080c4690d738cce55fca7389621340a973289dc673d998c4ee47667",
+          "weight_int8_sha256": "f4b360ad90ee26c736357a305aa7be0952f8ea47c1d2d1858e4bba5e8a1e3f07",
+          "output_int32_sha256": "99ba48ad6e7c64d1374706314e9aff95be0bf3fc749a6ed4c184d1d3d54d542a"
+        },
+        {
+          "name": "backbone.C3_n4.m.0.conv2.conv",
+          "input_chw": [
+            192,
+            13,
+            13
+          ],
+          "output_chw": [
+            192,
+            13,
+            13
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 521676,
+          "rtl_mac_steps": 438048,
+          "rtl_active_cycles": 454272,
+          "tile_commands": 12,
+          "output_values": 32448,
+          "scalar_checked_values": 32448,
+          "useful_macs": 56070144,
+          "input_int8_sha256": "26831b1b162cddcd1307c2435bbc7bf657719a13eb8a35b80e801084aad98441",
+          "weight_int8_sha256": "c043d0e58b803c52e24fb1c093d98b451eb9ba36734790796f369526d50e8ad7",
+          "output_int32_sha256": "20892e3bfe5970736fd5f47f7f2ce26f10a7b5ef2b9d7d6b6cc76b64db412f13"
+        },
+        {
+          "name": "backbone.C3_n4.conv3.conv",
+          "input_chw": [
+            384,
+            13,
+            13
+          ],
+          "output_chw": [
+            384,
+            13,
+            13
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 423000,
+          "rtl_mac_steps": 194688,
+          "rtl_active_cycles": 227136,
+          "tile_commands": 24,
+          "output_values": 64896,
+          "scalar_checked_values": 64896,
+          "useful_macs": 24920064,
+          "input_int8_sha256": "485a25aeffa6ac33b90c5b24da7948a28c464e77cb6bac30511b7defd8ce4995",
+          "weight_int8_sha256": "baee335d7033ca6738dc16e3758f98667d99a4470ee5f29e4230c81067c791bb",
+          "output_int32_sha256": "304abff59925d6ab6374c92439dcdcc2ee569a7fd7484a99b93b0ea0bec9453d"
+        },
+        {
+          "name": "head.stems.0.conv",
+          "input_chw": [
+            96,
+            52,
+            52
+          ],
+          "output_chw": [
+            96,
+            52,
+            52
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 519336,
+          "rtl_mac_steps": 194688,
+          "rtl_active_cycles": 324480,
+          "tile_commands": 96,
+          "output_values": 259584,
+          "scalar_checked_values": 259584,
+          "useful_macs": 24920064,
+          "input_int8_sha256": "d141528ad5a4650162188f1e96d5374970cc65d0da4d4825f22c46e48ffb7470",
+          "weight_int8_sha256": "76840bc5bf148c51b2ebd99d22c3d03658f02995869207cec71eb850fcbc8941",
+          "output_int32_sha256": "90272897ac0d39bdd87b26c380a49bd43109c2f2d2b32ef81d8e974a819b8372"
+        },
+        {
+          "name": "head.cls_convs.0.0.conv",
+          "input_chw": [
+            96,
+            52,
+            52
+          ],
+          "output_chw": [
+            96,
+            52,
+            52
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 2141928,
+          "rtl_mac_steps": 1752192,
+          "rtl_active_cycles": 1881984,
+          "tile_commands": 96,
+          "output_values": 259584,
+          "scalar_checked_values": 259584,
+          "useful_macs": 224280576,
+          "input_int8_sha256": "b43e017ab21e6a6ee9813de0f26ad2bcd136f5e4ddb04336ba93788e57e581f2",
+          "weight_int8_sha256": "b76ef6485f5bb37fc9d4bd697486101753b0def30e6a0cc318756b3ea9782789",
+          "output_int32_sha256": "49e7eb4df0caf14ddf3772b51b594bb358810075be94798a255fdb3fe2760b4c"
+        },
+        {
+          "name": "head.cls_convs.0.1.conv",
+          "input_chw": [
+            96,
+            52,
+            52
+          ],
+          "output_chw": [
+            96,
+            52,
+            52
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 2141928,
+          "rtl_mac_steps": 1752192,
+          "rtl_active_cycles": 1881984,
+          "tile_commands": 96,
+          "output_values": 259584,
+          "scalar_checked_values": 259584,
+          "useful_macs": 224280576,
+          "input_int8_sha256": "f0f59b114585e12b2a02cf29ff6f6b6007a13fcdff35c97488e89348de7df7c3",
+          "weight_int8_sha256": "49e8f2720a3a7d6d261b60a6e692af6cb967deea373e86a3950809b46c83f243",
+          "output_int32_sha256": "91cc0bdeeccccb817e2ba2e2935193e72ebadf2d44e80339c96b10c3cb1d35c2"
+        },
+        {
+          "name": "head.cls_preds.0",
+          "input_chw": [
+            96,
+            52,
+            52
+          ],
+          "output_chw": [
+            80,
+            52,
+            52
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 432780,
+          "rtl_mac_steps": 162240,
+          "rtl_active_cycles": 270400,
+          "tile_commands": 80,
+          "output_values": 216320,
+          "scalar_checked_values": 216320,
+          "useful_macs": 20766720,
+          "input_int8_sha256": "a83b4b71a61cb48bbf0e2aabc76e5ccd07f97b0b907b293cc9590a4003c24f7a",
+          "weight_int8_sha256": "514e4740d4a6733b11fdddef310bec8a2d662225f796bced71466394442b88c0",
+          "output_int32_sha256": "69c2d102a24ffd16249edc5e3267fd82f520ec4fee81a6b25e800fd2bcd368d1"
+        },
+        {
+          "name": "head.reg_convs.0.0.conv",
+          "input_chw": [
+            96,
+            52,
+            52
+          ],
+          "output_chw": [
+            96,
+            52,
+            52
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 2141928,
+          "rtl_mac_steps": 1752192,
+          "rtl_active_cycles": 1881984,
+          "tile_commands": 96,
+          "output_values": 259584,
+          "scalar_checked_values": 259584,
+          "useful_macs": 224280576,
+          "input_int8_sha256": "b43e017ab21e6a6ee9813de0f26ad2bcd136f5e4ddb04336ba93788e57e581f2",
+          "weight_int8_sha256": "aa07745f392973b6eac846c77dc67b5691e79739dfcda22431a098214ea8bb66",
+          "output_int32_sha256": "41c8ca83b3f11ac206bc75a0992b39cf52bb42f1aa18cf826f20b29659d1934e"
+        },
+        {
+          "name": "head.reg_convs.0.1.conv",
+          "input_chw": [
+            96,
+            52,
+            52
+          ],
+          "output_chw": [
+            96,
+            52,
+            52
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 2141928,
+          "rtl_mac_steps": 1752192,
+          "rtl_active_cycles": 1881984,
+          "tile_commands": 96,
+          "output_values": 259584,
+          "scalar_checked_values": 259584,
+          "useful_macs": 224280576,
+          "input_int8_sha256": "5aae73d0f47216b430dae55a51e66630a7e40c056595f06ced8334d56dc1f478",
+          "weight_int8_sha256": "318ed194c02889fb71173bff38d87f7aa3851f39f01631a782be376e814219f2",
+          "output_int32_sha256": "55e01d7d637eb4520ac18427b21fd20c7ab39da04f7c538150f967512e1c3d81"
+        },
+        {
+          "name": "head.reg_preds.0",
+          "input_chw": [
+            96,
+            52,
+            52
+          ],
+          "output_chw": [
+            4,
+            52,
+            52
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 86556,
+          "rtl_mac_steps": 32448,
+          "rtl_active_cycles": 54080,
+          "tile_commands": 16,
+          "output_values": 10816,
+          "scalar_checked_values": 10816,
+          "useful_macs": 1038336,
+          "input_int8_sha256": "174e3640fee37045f30499d62abbd82c54ea74a3359291ee79799f54eaf7923e",
+          "weight_int8_sha256": "4b7111a8ee300bc7b597c906d1a3e03d06894fc9134f2ac6398b91e4ecf4aa37",
+          "output_int32_sha256": "dbeb6d20111d90cb311a29207af73bfa3357ccfe4e52b9cedda2ea078ff60128"
+        },
+        {
+          "name": "head.obj_preds.0",
+          "input_chw": [
+            96,
+            52,
+            52
+          ],
+          "output_chw": [
+            1,
+            52,
+            52
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 86556,
+          "rtl_mac_steps": 32448,
+          "rtl_active_cycles": 54080,
+          "tile_commands": 16,
+          "output_values": 2704,
+          "scalar_checked_values": 2704,
+          "useful_macs": 259584,
+          "input_int8_sha256": "174e3640fee37045f30499d62abbd82c54ea74a3359291ee79799f54eaf7923e",
+          "weight_int8_sha256": "fb162306ed78e1ae819a948000b60cb39f7aa6595611796e225d8bbb76b10646",
+          "output_int32_sha256": "2c10fe5b96257dcb6564e1cef703f137a550757b658f4e8c4c9eef2fa7073b65"
+        },
+        {
+          "name": "head.stems.1.conv",
+          "input_chw": [
+            192,
+            26,
+            26
+          ],
+          "output_chw": [
+            96,
+            26,
+            26
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 227304,
+          "rtl_mac_steps": 97344,
+          "rtl_active_cycles": 129792,
+          "tile_commands": 24,
+          "output_values": 64896,
+          "scalar_checked_values": 64896,
+          "useful_macs": 12460032,
+          "input_int8_sha256": "b923684893cd21477771c560bc3557f941a1864a7c9dc9f3616b8b75752a735b",
+          "weight_int8_sha256": "28abfbbc4bd3a41f5a15cd0496c9effb4ef12b2d55116eea982fd3af2217311f",
+          "output_int32_sha256": "abc8209ee39eabdbde669bd82ca605b4547f91ab68337e88693bdba4598e00c8"
+        },
+        {
+          "name": "head.cls_convs.1.0.conv",
+          "input_chw": [
+            96,
+            26,
+            26
+          ],
+          "output_chw": [
+            96,
+            26,
+            26
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 535968,
+          "rtl_mac_steps": 438048,
+          "rtl_active_cycles": 470496,
+          "tile_commands": 24,
+          "output_values": 64896,
+          "scalar_checked_values": 64896,
+          "useful_macs": 56070144,
+          "input_int8_sha256": "c248dbe22cef8f7f731aef4ede98e5c12147e5df914caab38461b56d0f119349",
+          "weight_int8_sha256": "49c6a9957ce41bbcc0b9887ea65934df1ffb4f2a3cda80a0196ae5cc25064ab8",
+          "output_int32_sha256": "3c5aede589c08685f41361c2f116218a52a05b6a02f240b4f51cc9c4e74595d8"
+        },
+        {
+          "name": "head.cls_convs.1.1.conv",
+          "input_chw": [
+            96,
+            26,
+            26
+          ],
+          "output_chw": [
+            96,
+            26,
+            26
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 535968,
+          "rtl_mac_steps": 438048,
+          "rtl_active_cycles": 470496,
+          "tile_commands": 24,
+          "output_values": 64896,
+          "scalar_checked_values": 64896,
+          "useful_macs": 56070144,
+          "input_int8_sha256": "dc80cdd9d424c6b606ee055d859770c2a2a0c844704189a5a8ff9e69b774969b",
+          "weight_int8_sha256": "d6913691669e801d880e4fbf7759af08b5076b3a1736f5a5ea99f15cf21892ce",
+          "output_int32_sha256": "30651f211c2946747cbcf0f073d932b44034f234d9fffb513a95b8d56165fd52"
+        },
+        {
+          "name": "head.cls_preds.1",
+          "input_chw": [
+            96,
+            26,
+            26
+          ],
+          "output_chw": [
+            80,
+            26,
+            26
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 108240,
+          "rtl_mac_steps": 40560,
+          "rtl_active_cycles": 67600,
+          "tile_commands": 20,
+          "output_values": 54080,
+          "scalar_checked_values": 54080,
+          "useful_macs": 5191680,
+          "input_int8_sha256": "fd7812c65322637903cf850f583d3c9cf78eb31df72445d57c6acb4175386e6e",
+          "weight_int8_sha256": "57b4eaefc3c07bb2d556e248fb27e9f32831e9b5745d49785af1abb1ed2e922c",
+          "output_int32_sha256": "8aa8187ce5e42e50a014c90ed5733c36c29477cfb5dfcbb9e988e3ba6e278e48"
+        },
+        {
+          "name": "head.reg_convs.1.0.conv",
+          "input_chw": [
+            96,
+            26,
+            26
+          ],
+          "output_chw": [
+            96,
+            26,
+            26
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 535968,
+          "rtl_mac_steps": 438048,
+          "rtl_active_cycles": 470496,
+          "tile_commands": 24,
+          "output_values": 64896,
+          "scalar_checked_values": 64896,
+          "useful_macs": 56070144,
+          "input_int8_sha256": "c248dbe22cef8f7f731aef4ede98e5c12147e5df914caab38461b56d0f119349",
+          "weight_int8_sha256": "bc5b9ef1857c60c5b55f194db405e3fe27ddb757acd54813a0297745a0bdac10",
+          "output_int32_sha256": "d41d974cdc6a84158bcd3388f8ae2cae2baca15dd48ee41fb6ab13dae1354590"
+        },
+        {
+          "name": "head.reg_convs.1.1.conv",
+          "input_chw": [
+            96,
+            26,
+            26
+          ],
+          "output_chw": [
+            96,
+            26,
+            26
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 535968,
+          "rtl_mac_steps": 438048,
+          "rtl_active_cycles": 470496,
+          "tile_commands": 24,
+          "output_values": 64896,
+          "scalar_checked_values": 64896,
+          "useful_macs": 56070144,
+          "input_int8_sha256": "f6abdf1a5e3deb73d48a84c68fce28eb7df75465e41290fb43806e4c5f1ff54b",
+          "weight_int8_sha256": "2ffd4ca8221ef7001e3c3e8f229d5369bbe8934d367ffb29692d016f3fc77df8",
+          "output_int32_sha256": "aab82fb07adfd1faf94ae5ccff5d3c6b8d44652d9d597182cc96bb2a00851e14"
+        },
+        {
+          "name": "head.reg_preds.1",
+          "input_chw": [
+            96,
+            26,
+            26
+          ],
+          "output_chw": [
+            4,
+            26,
+            26
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 21648,
+          "rtl_mac_steps": 8112,
+          "rtl_active_cycles": 13520,
+          "tile_commands": 4,
+          "output_values": 2704,
+          "scalar_checked_values": 2704,
+          "useful_macs": 259584,
+          "input_int8_sha256": "b1839eb7e07d76cf7ab68273898eefd1e30f0bb6c8fcc1319de10cfa42df23e0",
+          "weight_int8_sha256": "020264256711631faeba7705d157c63562ad7948cf337d57a1eff3ea2c1caf46",
+          "output_int32_sha256": "ff55286eace7af868ebc032282f1c7ac612ea291daedb874a3767dce270357d6"
+        },
+        {
+          "name": "head.obj_preds.1",
+          "input_chw": [
+            96,
+            26,
+            26
+          ],
+          "output_chw": [
+            1,
+            26,
+            26
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 21648,
+          "rtl_mac_steps": 8112,
+          "rtl_active_cycles": 13520,
+          "tile_commands": 4,
+          "output_values": 676,
+          "scalar_checked_values": 676,
+          "useful_macs": 64896,
+          "input_int8_sha256": "b1839eb7e07d76cf7ab68273898eefd1e30f0bb6c8fcc1319de10cfa42df23e0",
+          "weight_int8_sha256": "5bea8b127cb313d7e1a4f8e17219ebc448bad2eaf6eae5c83dd7eeba0a75708f",
+          "output_int32_sha256": "f9dfd33e1cf58f7114f4e4f2cd5010f4a568583b3fcae6e63b23374af593983b"
+        },
+        {
+          "name": "head.stems.2.conv",
+          "input_chw": [
+            384,
+            13,
+            13
+          ],
+          "output_chw": [
+            96,
+            13,
+            13
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 105750,
+          "rtl_mac_steps": 48672,
+          "rtl_active_cycles": 56784,
+          "tile_commands": 6,
+          "output_values": 16224,
+          "scalar_checked_values": 16224,
+          "useful_macs": 6230016,
+          "input_int8_sha256": "7e72929dd76cee9e7ba2074426c88e92eb3d58f07b56934da03671fae7e4bad2",
+          "weight_int8_sha256": "2e4c2081ff965dbe53c6b6e181d0e75ad041291a3bc780b6a4877d55be779993",
+          "output_int32_sha256": "099a98433ca9662251e183a752e1b6413c773ac4b810bde6e3531cfa49f3218a"
+        },
+        {
+          "name": "head.cls_convs.2.0.conv",
+          "input_chw": [
+            96,
+            13,
+            13
+          ],
+          "output_chw": [
+            96,
+            13,
+            13
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 134478,
+          "rtl_mac_steps": 109512,
+          "rtl_active_cycles": 117624,
+          "tile_commands": 6,
+          "output_values": 16224,
+          "scalar_checked_values": 16224,
+          "useful_macs": 14017536,
+          "input_int8_sha256": "8ecaca29d7319c15df177563619838b6e17d9486d99afb3bc6cfc7b51dcb0e12",
+          "weight_int8_sha256": "8c29bd710afc5f25b87bf351791efc26543ef4e25f3c9e35b2b98011bd182419",
+          "output_int32_sha256": "df18b44d959125d58528bd11eb921e642f8a77489efee3f1e3259eab2263a36f"
+        },
+        {
+          "name": "head.cls_convs.2.1.conv",
+          "input_chw": [
+            96,
+            13,
+            13
+          ],
+          "output_chw": [
+            96,
+            13,
+            13
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 134478,
+          "rtl_mac_steps": 109512,
+          "rtl_active_cycles": 117624,
+          "tile_commands": 6,
+          "output_values": 16224,
+          "scalar_checked_values": 16224,
+          "useful_macs": 14017536,
+          "input_int8_sha256": "71ab35425adfd091ede88f3a1017b0181c7babf60c51b63a622a741df5006ce2",
+          "weight_int8_sha256": "39c820366973198a6ee0306430ef74821154fa9a4c67b46736a7e333033644f0",
+          "output_int32_sha256": "42f8a5df60db5891d86979e2079914dc673a0ab4137e63f3e8a7cbf00c8c94ed"
+        },
+        {
+          "name": "head.cls_preds.2",
+          "input_chw": [
+            96,
+            13,
+            13
+          ],
+          "output_chw": [
+            80,
+            13,
+            13
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 27105,
+          "rtl_mac_steps": 10140,
+          "rtl_active_cycles": 16900,
+          "tile_commands": 5,
+          "output_values": 13520,
+          "scalar_checked_values": 13520,
+          "useful_macs": 1297920,
+          "input_int8_sha256": "937eecec170512245977b3bdf71aaad5060827f1bff9b289352ad4b0acaabc04",
+          "weight_int8_sha256": "33f36f192b10ba8d0b0a96aaa3a511a8c82f0fe2617f617e94c7e38ea86303d9",
+          "output_int32_sha256": "9a52e43d7f7effe2d7a474ffe02b615f0290f75973df287083f2f1b04559d987"
+        },
+        {
+          "name": "head.reg_convs.2.0.conv",
+          "input_chw": [
+            96,
+            13,
+            13
+          ],
+          "output_chw": [
+            96,
+            13,
+            13
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 134478,
+          "rtl_mac_steps": 109512,
+          "rtl_active_cycles": 117624,
+          "tile_commands": 6,
+          "output_values": 16224,
+          "scalar_checked_values": 16224,
+          "useful_macs": 14017536,
+          "input_int8_sha256": "8ecaca29d7319c15df177563619838b6e17d9486d99afb3bc6cfc7b51dcb0e12",
+          "weight_int8_sha256": "15d8650cd08fc418ba328f03b9310ff80d182390b76bd59f8019dc50ba78d951",
+          "output_int32_sha256": "4b5a4d3874b0dd15e73e8d3a72365544bed72c3d421979d33171f79c95a58249"
+        },
+        {
+          "name": "head.reg_convs.2.1.conv",
+          "input_chw": [
+            96,
+            13,
+            13
+          ],
+          "output_chw": [
+            96,
+            13,
+            13
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 134478,
+          "rtl_mac_steps": 109512,
+          "rtl_active_cycles": 117624,
+          "tile_commands": 6,
+          "output_values": 16224,
+          "scalar_checked_values": 16224,
+          "useful_macs": 14017536,
+          "input_int8_sha256": "88bbab3345647b6e77fffb60f8134fafe4ceb3f50b5d4bddd8f0dc7be802b765",
+          "weight_int8_sha256": "a728f1c618e51a239dbf509f6c8c62d8633acbea779d11f61d671db4ed3854cc",
+          "output_int32_sha256": "d40454b222ae47615fd3277980e66699700a5e34671999f353f86f04c4642675"
+        },
+        {
+          "name": "head.reg_preds.2",
+          "input_chw": [
+            96,
+            13,
+            13
+          ],
+          "output_chw": [
+            4,
+            13,
+            13
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 5421,
+          "rtl_mac_steps": 2028,
+          "rtl_active_cycles": 3380,
+          "tile_commands": 1,
+          "output_values": 676,
+          "scalar_checked_values": 676,
+          "useful_macs": 64896,
+          "input_int8_sha256": "e8cab2748a8ca1679085c6d74dfdcc1922e783175c0047b6986e3c9790c3d99d",
+          "weight_int8_sha256": "d3a6e7427eb73215dd81f15e849b701ea9efbbce55dc516ac576eb881c8eb49d",
+          "output_int32_sha256": "4c3987ae48ae5b1c518921f25c33c8039008398c3f45589d0a47eb79e2b984ba"
+        },
+        {
+          "name": "head.obj_preds.2",
+          "input_chw": [
+            96,
+            13,
+            13
+          ],
+          "output_chw": [
+            1,
+            13,
+            13
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 5421,
+          "rtl_mac_steps": 2028,
+          "rtl_active_cycles": 3380,
+          "tile_commands": 1,
+          "output_values": 169,
+          "scalar_checked_values": 169,
+          "useful_macs": 16224,
+          "input_int8_sha256": "e8cab2748a8ca1679085c6d74dfdcc1922e783175c0047b6986e3c9790c3d99d",
+          "weight_int8_sha256": "9923bbb5b7d9a05d779f285773ea00c1e2dce021f2ed5f70242ac54baa9a8be4",
+          "output_int32_sha256": "53526ec18f50fed6dbf61bba52543fd4a5e934315cc2092bab6df55678bc77f2"
+        }
+      ],
+      "fp32_comparison": {
+        "reference": "reports/dog-reference-tiny.json",
+        "reference_sha256": "41a5ed437104e646340df0027966a8568afd53eab46c191391aa885e1d5dea05",
+        "matches": [
+          {
+            "class_id": 1,
+            "class_name": "bicycle",
+            "fp32_score": 0.8874322123030964,
+            "cosim_score": 0.8912416047670035,
+            "score_delta": 0.003809392463907102,
+            "box_iou": 0.9693355025061068
+          },
+          {
+            "class_id": 2,
+            "class_name": "car",
+            "fp32_score": 0.6989613728724038,
+            "cosim_score": 0.712867674738817,
+            "score_delta": 0.013906301866413173,
+            "box_iou": 0.9635788790543595
+          },
+          {
+            "class_id": 15,
+            "class_name": "cat",
+            "fp32_score": 0.5552048025250116,
+            "cosim_score": 0.5539526114607725,
+            "score_delta": -0.0012521910642391276,
+            "box_iou": 0.9790642023849888
+          }
+        ],
+        "note": "Both predict class 15 (cat) on the dog at size 416; no manual label correction. This is not mAP."
+      }
+    },
+    {
+      "mode": "Verilator adam128 INT8 convolution + CPU FP32 remaining graph operators",
+      "model": "YOLOX-Tiny",
+      "input_size": 320,
+      "original_hw": [
+        576,
+        768
+      ],
+      "upstream_commit": "6ddff4824372906469a7fae2dc3206c7aa4bbaee",
+      "weights_sha256": "9de513de589ac98bb92d3bca53b5af7b9acfa9b0bacb831f7999d0f7afaee8f0",
+      "image_sha256": "5a9522051c3cec2bbd2f6323fccba32e8fbf3ddcc2b3e2fd46b04c720bc6f866",
+      "annotated_image_sha256": "d644e0553450e69631f920c4cbb289a75f34f99ec927134d8a9934dc88593fb6",
+      "torch": "2.14.0+cu126",
+      "numpy": "2.4.6",
+      "opencv": "5.0.0",
+      "preprocess": "official non-legacy BGR, top-left resize, pad=114, CHW, no /255",
+      "quantization": "dynamic per-tensor activation + per-output-channel weight symmetric INT8 [-127,127]; round ties to even; INT32 RTL accumulator; CPU FP32 dequant/bias; no calibration",
+      "cpu_ops": [
+        "preprocess",
+        "quantize/dequantize",
+        "bias",
+        "BatchNorm",
+        "SiLU",
+        "Focus",
+        "residual add",
+        "concat",
+        "MaxPool",
+        "nearest upsample",
+        "sigmoid",
+        "decode",
+        "NMS",
+        "draw"
+      ],
+      "rtl_conv_layers": 83,
+      "cpu_conv_layers": 0,
+      "integer_verification": true,
+      "confidence": 0.25,
+      "nms_iou": 0.45,
+      "class_agnostic_nms": true,
+      "detections": [
+        {
+          "class_id": 16,
+          "class_name": "dog",
+          "score": 0.8129063733788584,
+          "xyxy_original": [
+            124.24513549804686,
+            218.2081787109375,
+            316.215380859375,
+            541.2224853515625
+          ]
+        },
+        {
+          "class_id": 2,
+          "class_name": "car",
+          "score": 0.7920596283007697,
+          "xyxy_original": [
+            462.5907348632812,
+            76.45279541015624,
+            693.9856201171875,
+            170.93944702148437
+          ]
+        },
+        {
+          "class_id": 1,
+          "class_name": "bicycle",
+          "score": 0.764956313858498,
+          "xyxy_original": [
+            99.52575073242187,
+            114.17025146484374,
+            562.565625,
+            434.1881103515625
+          ]
+        }
+      ],
+      "totals": {
+        "rtl_clock_cycles": 24609596,
+        "rtl_mac_steps": 15402000,
+        "rtl_active_cycles": 18522800,
+        "tile_commands": 3233,
+        "output_values": 5775300,
+        "scalar_checked_values": 5775300,
+        "useful_macs": 1897200000
+      },
+      "elapsed_seconds": 17.429240208999545,
+      "simulator": {
+        "verilator": "Verilator 5.052 2026-09-05 rev v5.052",
+        "binary_sha256": "77e05148edeef4a0277ad91f2421e1e5ef2dc87b0790b059a59f90abb0e4ccd1",
+        "source_sha256": {
+          "rtl/adam/adam_mul_pair.sv": "2b6e9e7837087efefe1bd12f9866d68219ec09fdbe2bd68925c1d7d03221f935",
+          "rtl/adam/adam_sdp_ram.sv": "20d2ca02713ea7eb826535a8ec7c9131c4b9ede0598b22b254f88d9e59043d0e",
+          "rtl/adam/adam_mac128.sv": "0010667f2f53c73a219ad2ef83520a53ecf7d67cc28c2098d85361e721390f02",
+          "rtl/adam/adam_conv128.sv": "d1ef71647d2cad34c666883c61ed44a109794bf69d1ccad377b265dd09f59cb7",
+          "sim/adam_image_server.cpp": "e2f0427058ff4d315b93120fb22a5adf83d4e06e588e4e20d7abddedfae08818"
+        }
+      },
+      "scope": {
+        "full_yolox_graph": true,
+        "all_convolutions_rtl": true,
+        "all_ops_rtl": false,
+        "static_int8_deployment": false,
+        "riscv_uart_ddr_simulated": false,
+        "board_run": false
+      },
+      "result": "PASS",
+      "raw_report": "build/dog-adam128-320.json",
+      "raw_report_sha256": "7982f83edcafb9321474feb6243bbfc1028cb58eddde33212206b32601a09399",
+      "annotated_image": "build/dog-adam128-320.png",
+      "run_log": "build/dog-adam128-320.png.run.log",
+      "metrics": {
+        "command": [
+          "$TORCH_PYTHON",
+          "tools/detect_image.py",
+          "--image",
+          "build/upstream/YOLOX/assets/dog.jpg",
+          "--output",
+          "build/dog-adam128-320.png",
+          "--size",
+          "320"
+        ],
+        "returncode": 0,
+        "guard_stop": null,
+        "elapsed_seconds": 19.753160264001053,
+        "sampled_process_group_peak_rss_bytes": 783163392,
+        "minimum_linux_available_bytes": 13904494592,
+        "rss_limit_mib": 1024,
+        "per_process_address_space_limit_mib": 16384,
+        "linux_reserve_mib": 4096,
+        "cpu_affinity_count": 1,
+        "nice": 19,
+        "sampling_period_seconds": 0.05,
+        "limits": "RSS is sampled, not a cgroup hard limit; Windows memory is not measured here."
+      },
+      "layers": [
+        {
+          "name": "backbone.backbone.stem.conv.conv",
+          "input_chw": [
+            12,
+            160,
+            160
+          ],
+          "output_chw": [
+            24,
+            160,
+            160
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 1466948,
+          "rtl_mac_steps": 921600,
+          "rtl_active_cycles": 1331200,
+          "tile_commands": 288,
+          "output_values": 614400,
+          "scalar_checked_values": 614400,
+          "useful_macs": 66355200,
+          "input_int8_sha256": "e624dcfc6b6f9f58cbf8854e863271ae20bec66f24bc884e37f23d7e1822150b",
+          "weight_int8_sha256": "3512e2ef7d41d5885b83b2bfcfddade0a34ed3d0a4696d56ed27098b216dc361",
+          "output_int32_sha256": "2d4a4246fe77aec52704bdddcaf916b351f8597ddb34e3cbb3f1b4a9e7fcfa5b"
+        },
+        {
+          "name": "backbone.backbone.dark2.0.conv",
+          "input_chw": [
+            24,
+            160,
+            160
+          ],
+          "output_chw": [
+            48,
+            80,
+            80
+          ],
+          "kernel": 3,
+          "stride": 2,
+          "padding": 1,
+          "rtl_clock_cycles": 938769,
+          "rtl_mac_steps": 518400,
+          "rtl_active_cycles": 672000,
+          "tile_commands": 432,
+          "output_values": 307200,
+          "scalar_checked_values": 307200,
+          "useful_macs": 66355200,
+          "input_int8_sha256": "00dce2571b395579552fd7df0821bd38ac0eac7624dd99c150e01048a7535b5d",
+          "weight_int8_sha256": "3e79690afbd80c8ed44c0d67ffda3e311a5a88b6f10248fe78b4f940d73403d9",
+          "output_int32_sha256": "3f7ff952ca85832486dc0030d41218be086c6d5121cd8e6e299f25cf95ca0b23"
+        },
+        {
+          "name": "backbone.backbone.dark2.1.conv1.conv",
+          "input_chw": [
+            48,
+            80,
+            80
+          ],
+          "output_chw": [
+            24,
+            80,
+            80
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 256062,
+          "rtl_mac_steps": 76800,
+          "rtl_active_cycles": 179200,
+          "tile_commands": 50,
+          "output_values": 153600,
+          "scalar_checked_values": 153600,
+          "useful_macs": 7372800,
+          "input_int8_sha256": "d06c183547a490ded1ef061254aae5ed1ca35728cfb73c6e0bd8e46d22fab103",
+          "weight_int8_sha256": "b71eea0f990f5064fac95b5d06025a40d26655b9a07f51947eaed0a1a113ae13",
+          "output_int32_sha256": "6179c2b800310f4e6d0ebdc1e1897177f444326a365ce0a8639e4f2268a85464"
+        },
+        {
+          "name": "backbone.backbone.dark2.1.conv2.conv",
+          "input_chw": [
+            48,
+            80,
+            80
+          ],
+          "output_chw": [
+            24,
+            80,
+            80
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 256062,
+          "rtl_mac_steps": 76800,
+          "rtl_active_cycles": 179200,
+          "tile_commands": 50,
+          "output_values": 153600,
+          "scalar_checked_values": 153600,
+          "useful_macs": 7372800,
+          "input_int8_sha256": "d06c183547a490ded1ef061254aae5ed1ca35728cfb73c6e0bd8e46d22fab103",
+          "weight_int8_sha256": "522a388ca032bb19b50b6940db06934673ba13d054c87d3b26666f7bcf9b4dac",
+          "output_int32_sha256": "a3ef90ab293899fdb95f408409bb5bf6009d195222a99207ecc0b385c190133c"
+        },
+        {
+          "name": "backbone.backbone.dark2.1.m.0.conv1.conv",
+          "input_chw": [
+            24,
+            80,
+            80
+          ],
+          "output_chw": [
+            24,
+            80,
+            80
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 179256,
+          "rtl_mac_steps": 38400,
+          "rtl_active_cycles": 140800,
+          "tile_commands": 50,
+          "output_values": 153600,
+          "scalar_checked_values": 153600,
+          "useful_macs": 3686400,
+          "input_int8_sha256": "94b8c085532a039e2375162bed70294224a465a8d69ed97e3ec0a178c232bf64",
+          "weight_int8_sha256": "f4f1fa0d502ed0004fc9322058074f97da50cfa3beef3fd1cb595f1d92fd527e",
+          "output_int32_sha256": "b15f23ef60ca536f422e07b633eafda2efd148c8b21c2c43e994b64f588f9a29"
+        },
+        {
+          "name": "backbone.backbone.dark2.1.m.0.conv2.conv",
+          "input_chw": [
+            24,
+            80,
+            80
+          ],
+          "output_chw": [
+            24,
+            80,
+            80
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 498910,
+          "rtl_mac_steps": 345600,
+          "rtl_active_cycles": 448000,
+          "tile_commands": 72,
+          "output_values": 153600,
+          "scalar_checked_values": 153600,
+          "useful_macs": 33177600,
+          "input_int8_sha256": "9e5478ef210bbc491056deddbf640b8f43b298f975c43ad005a95fcc0f686e65",
+          "weight_int8_sha256": "074100922f08b4ed2449016d5dcf2deb544789d10d931848a33d961d0a2d3f64",
+          "output_int32_sha256": "3fe93543c2c410cd582f549cae4f15cc3379a40516124625d78a654f32ba76dd"
+        },
+        {
+          "name": "backbone.backbone.dark2.1.conv3.conv",
+          "input_chw": [
+            48,
+            80,
+            80
+          ],
+          "output_chw": [
+            48,
+            80,
+            80
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 384093,
+          "rtl_mac_steps": 115200,
+          "rtl_active_cycles": 268800,
+          "tile_commands": 75,
+          "output_values": 307200,
+          "scalar_checked_values": 307200,
+          "useful_macs": 14745600,
+          "input_int8_sha256": "9902c573be13ba58d44dacf0c8d658708e2199d6aeccb18666da01c94d9b96ca",
+          "weight_int8_sha256": "3d3421c20c5e13c16d2822a22fc3fd44f6cd1af10ad67d79fd14dbf737dd1ec2",
+          "output_int32_sha256": "354bebd9cc0950d5a6d0cdefe85d02ae208037603a6e3ac22485845b3163a843"
+        },
+        {
+          "name": "backbone.backbone.dark3.0.conv",
+          "input_chw": [
+            48,
+            80,
+            80
+          ],
+          "output_chw": [
+            96,
+            40,
+            40
+          ],
+          "kernel": 3,
+          "stride": 2,
+          "padding": 1,
+          "rtl_clock_cycles": 861996,
+          "rtl_mac_steps": 518400,
+          "rtl_active_cycles": 595200,
+          "tile_commands": 216,
+          "output_values": 153600,
+          "scalar_checked_values": 153600,
+          "useful_macs": 66355200,
+          "input_int8_sha256": "dd483500a965bd3d53972a62d1e19f801cd2ef92ecf9b11ef5f7661807b88203",
+          "weight_int8_sha256": "d705f8abca6e31e73f16c8bc01efbfe5c0cea3c21e7cd6090ac67bc3a481f971",
+          "output_int32_sha256": "100e6c63792fab329de7cf176e9702902a3c72e4f366504d4c6cd3f97c7f214f"
+        },
+        {
+          "name": "backbone.backbone.dark3.1.conv1.conv",
+          "input_chw": [
+            96,
+            40,
+            40
+          ],
+          "output_chw": [
+            48,
+            40,
+            40
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 153663,
+          "rtl_mac_steps": 57600,
+          "rtl_active_cycles": 96000,
+          "tile_commands": 27,
+          "output_values": 76800,
+          "scalar_checked_values": 76800,
+          "useful_macs": 7372800,
+          "input_int8_sha256": "df88933dd10bccef31dcb48c2bfef3a4da7883009d88a40042b37652ada9d5af",
+          "weight_int8_sha256": "fd42f466ae6ed254553440aa7ea1d385e70080f13cbaca7fe8d620a6d45cf490",
+          "output_int32_sha256": "145f9064ddb64f277dfee47bdc5fd7770b46d1690941fd3ba6542641dced4005"
+        },
+        {
+          "name": "backbone.backbone.dark3.1.conv2.conv",
+          "input_chw": [
+            96,
+            40,
+            40
+          ],
+          "output_chw": [
+            48,
+            40,
+            40
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 153663,
+          "rtl_mac_steps": 57600,
+          "rtl_active_cycles": 96000,
+          "tile_commands": 27,
+          "output_values": 76800,
+          "scalar_checked_values": 76800,
+          "useful_macs": 7372800,
+          "input_int8_sha256": "df88933dd10bccef31dcb48c2bfef3a4da7883009d88a40042b37652ada9d5af",
+          "weight_int8_sha256": "9dd71f1f407c43dc938706fe4af174b3f26bfc50789e81994ebaf7230fed55c4",
+          "output_int32_sha256": "bae66fb0ccc5b9f5cfd143a8d8f770e5fa14105a6d50913a3a727dc84b530420"
+        },
+        {
+          "name": "backbone.backbone.dark3.1.m.0.conv1.conv",
+          "input_chw": [
+            48,
+            40,
+            40
+          ],
+          "output_chw": [
+            48,
+            40,
+            40
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 96045,
+          "rtl_mac_steps": 28800,
+          "rtl_active_cycles": 67200,
+          "tile_commands": 27,
+          "output_values": 76800,
+          "scalar_checked_values": 76800,
+          "useful_macs": 3686400,
+          "input_int8_sha256": "f8c30f408b2e9acbede1cd6231e99a5604e14e9ff0eb9a8a883ece437ede125d",
+          "weight_int8_sha256": "e5d50e5c0fba2a0fb9556ce800d23a611a2ee7b57ddcc78920844aded4cefc2f",
+          "output_int32_sha256": "cb883562724befdf6d8305dd0ea77dc6a2ab029279d27fa170ae33ebf4006c3d"
+        },
+        {
+          "name": "backbone.backbone.dark3.1.m.0.conv2.conv",
+          "input_chw": [
+            48,
+            40,
+            40
+          ],
+          "output_chw": [
+            48,
+            40,
+            40
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 335877,
+          "rtl_mac_steps": 259200,
+          "rtl_active_cycles": 297600,
+          "tile_commands": 27,
+          "output_values": 76800,
+          "scalar_checked_values": 76800,
+          "useful_macs": 33177600,
+          "input_int8_sha256": "f15cf81265d03abf9e56981636f2a8ee513c96be0d54f54983e1f77980677260",
+          "weight_int8_sha256": "c22d778167d693ee53e2de25d9642cfa2bc0e828a3ffada0a632c252422f4a58",
+          "output_int32_sha256": "bddba62f158a1f2500e1528a648fefa624571b49dec1be4277526cac81803e93"
+        },
+        {
+          "name": "backbone.backbone.dark3.1.m.1.conv1.conv",
+          "input_chw": [
+            48,
+            40,
+            40
+          ],
+          "output_chw": [
+            48,
+            40,
+            40
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 96045,
+          "rtl_mac_steps": 28800,
+          "rtl_active_cycles": 67200,
+          "tile_commands": 27,
+          "output_values": 76800,
+          "scalar_checked_values": 76800,
+          "useful_macs": 3686400,
+          "input_int8_sha256": "78c64e1422ff82e1d51fd2de26037cfcf6ac7da302fd54678889ca876bb2b722",
+          "weight_int8_sha256": "62af40a6c409f7191ea34abe80758c93da5167c5d0d88c9d02e56d71219b6cea",
+          "output_int32_sha256": "cbdf37eb0145ec02c20617589f0454082570a71cdb55157e47c3811d3f216867"
+        },
+        {
+          "name": "backbone.backbone.dark3.1.m.1.conv2.conv",
+          "input_chw": [
+            48,
+            40,
+            40
+          ],
+          "output_chw": [
+            48,
+            40,
+            40
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 335877,
+          "rtl_mac_steps": 259200,
+          "rtl_active_cycles": 297600,
+          "tile_commands": 27,
+          "output_values": 76800,
+          "scalar_checked_values": 76800,
+          "useful_macs": 33177600,
+          "input_int8_sha256": "8ebe025cd65dec6f30575c9999c5d685751765eb58497c9f580b84bfb17f6fc8",
+          "weight_int8_sha256": "7af9a91eae5a4dfbed09074b1d8484396808ee775fc3e2dc6f69120c09c3bb4b",
+          "output_int32_sha256": "6f13479c38dd58ab6c7fb53f487f79ca8c8a2c4a1c853ef690dac6a16fbfae40"
+        },
+        {
+          "name": "backbone.backbone.dark3.1.m.2.conv1.conv",
+          "input_chw": [
+            48,
+            40,
+            40
+          ],
+          "output_chw": [
+            48,
+            40,
+            40
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 96045,
+          "rtl_mac_steps": 28800,
+          "rtl_active_cycles": 67200,
+          "tile_commands": 27,
+          "output_values": 76800,
+          "scalar_checked_values": 76800,
+          "useful_macs": 3686400,
+          "input_int8_sha256": "4b17fa3eaf7b57ea78293ad4f1b639d29297c25019c9e9a9816fd9267dd9b341",
+          "weight_int8_sha256": "d2154e990abe1bfbee597eefd8e66064414026bd833805ed3696f7fc924d6458",
+          "output_int32_sha256": "2517e806ca65a7efc3234e448a0e6ccb15b8967f4290ce17cbcac225e4377d93"
+        },
+        {
+          "name": "backbone.backbone.dark3.1.m.2.conv2.conv",
+          "input_chw": [
+            48,
+            40,
+            40
+          ],
+          "output_chw": [
+            48,
+            40,
+            40
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 335877,
+          "rtl_mac_steps": 259200,
+          "rtl_active_cycles": 297600,
+          "tile_commands": 27,
+          "output_values": 76800,
+          "scalar_checked_values": 76800,
+          "useful_macs": 33177600,
+          "input_int8_sha256": "1b7dd76893b228d8e71bb7efca015b900417c4e352e61c22b4d51f35bf57ec86",
+          "weight_int8_sha256": "a0fb66a61ff06cad85936aeb71df02abbe4a3e62ee16ebaecb5a821ce747d86d",
+          "output_int32_sha256": "5d06ebca614e11ddeaaf5ab72682ba6e16a3f57bb4f2e47525d0bc6a0f5bbcce"
+        },
+        {
+          "name": "backbone.backbone.dark3.1.conv3.conv",
+          "input_chw": [
+            96,
+            40,
+            40
+          ],
+          "output_chw": [
+            96,
+            40,
+            40
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 307326,
+          "rtl_mac_steps": 115200,
+          "rtl_active_cycles": 192000,
+          "tile_commands": 54,
+          "output_values": 153600,
+          "scalar_checked_values": 153600,
+          "useful_macs": 14745600,
+          "input_int8_sha256": "26a3c1c1b47dfe8288ec46c228cda1b545018cd96ed0fd00db5504e61bf37884",
+          "weight_int8_sha256": "41c834f4cd3a9ec75f334e72e51dffe922c5bf52ace7cac21f32421bfba31d24",
+          "output_int32_sha256": "697c8f0abcf71bd6e6cf578b0ec05b9fc16d71a813d4cc8e605495cd7cf01b8a"
+        },
+        {
+          "name": "backbone.backbone.dark4.0.conv",
+          "input_chw": [
+            96,
+            40,
+            40
+          ],
+          "output_chw": [
+            192,
+            20,
+            20
+          ],
+          "kernel": 3,
+          "stride": 2,
+          "padding": 1,
+          "rtl_clock_cycles": 824460,
+          "rtl_mac_steps": 518400,
+          "rtl_active_cycles": 556800,
+          "tile_commands": 108,
+          "output_values": 76800,
+          "scalar_checked_values": 76800,
+          "useful_macs": 66355200,
+          "input_int8_sha256": "245034204a941d167f60ef4c994e47f8d84914040d25750e9c2893cd1e8a3910",
+          "weight_int8_sha256": "ee256c0a5c127c61cbde8fe8df4eaea6c0d4e053e26c0daba2b1a66bfc62f030",
+          "output_int32_sha256": "712d9712239d4c3958deb2f3fba973a46ae0d4647738e374f98c87f9d25f3575"
+        },
+        {
+          "name": "backbone.backbone.dark4.1.conv1.conv",
+          "input_chw": [
+            192,
+            20,
+            20
+          ],
+          "output_chw": [
+            96,
+            20,
+            20
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 134568,
+          "rtl_mac_steps": 57600,
+          "rtl_active_cycles": 76800,
+          "tile_commands": 24,
+          "output_values": 38400,
+          "scalar_checked_values": 38400,
+          "useful_macs": 7372800,
+          "input_int8_sha256": "a95aeade80c1e21d88c3a4e5a5b02f393debca00935bb0e7437728d52d184baf",
+          "weight_int8_sha256": "2f97b09ec4fbef5ac70e3d3eb3fafe352db42aad0549b2f4cc78b5e986716439",
+          "output_int32_sha256": "cc4aef49f115eb09347aa9f5c91fbf30e04d17c7c0c3ac042f272446520e4d3b"
+        },
+        {
+          "name": "backbone.backbone.dark4.1.conv2.conv",
+          "input_chw": [
+            192,
+            20,
+            20
+          ],
+          "output_chw": [
+            96,
+            20,
+            20
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 134568,
+          "rtl_mac_steps": 57600,
+          "rtl_active_cycles": 76800,
+          "tile_commands": 24,
+          "output_values": 38400,
+          "scalar_checked_values": 38400,
+          "useful_macs": 7372800,
+          "input_int8_sha256": "a95aeade80c1e21d88c3a4e5a5b02f393debca00935bb0e7437728d52d184baf",
+          "weight_int8_sha256": "c09f09e7215bcb7105d8d0269e883f7bf21fb672b1903cfe54f2c4cb280c5413",
+          "output_int32_sha256": "37945269355d1cb2e70a4158b1896098e821805d6e1e51d3dd12b6b8842552ab"
+        },
+        {
+          "name": "backbone.backbone.dark4.1.m.0.conv1.conv",
+          "input_chw": [
+            96,
+            20,
+            20
+          ],
+          "output_chw": [
+            96,
+            20,
+            20
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 76896,
+          "rtl_mac_steps": 28800,
+          "rtl_active_cycles": 48000,
+          "tile_commands": 24,
+          "output_values": 38400,
+          "scalar_checked_values": 38400,
+          "useful_macs": 3686400,
+          "input_int8_sha256": "d48e8c598fdaf94ac60f6c913e7a162cea36da0c60902862c9dc2b32b5c2f8a8",
+          "weight_int8_sha256": "e462fa18fd932c01734b0d729ee0463ed6ecaf021b6a964dce7bf71dce61abb0",
+          "output_int32_sha256": "02b53f5e24a830a7e4962023949978d74110ecaf6a30f2ebd2345cf59a415b9e"
+        },
+        {
+          "name": "backbone.backbone.dark4.1.m.0.conv2.conv",
+          "input_chw": [
+            96,
+            20,
+            20
+          ],
+          "output_chw": [
+            96,
+            20,
+            20
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 320544,
+          "rtl_mac_steps": 259200,
+          "rtl_active_cycles": 278400,
+          "tile_commands": 24,
+          "output_values": 38400,
+          "scalar_checked_values": 38400,
+          "useful_macs": 33177600,
+          "input_int8_sha256": "607013814ebc52de0d6438c4b1a0bfa201e86e73d04ed77b6e1d6931af79c318",
+          "weight_int8_sha256": "4ac287702432839683b3fd0909d944ae987171581705ed6e65c5cc8c9853b7fb",
+          "output_int32_sha256": "9380149ffbfac5d5da47d9ffb22688f0440c92f729eb02f19bd2f14a4f6da697"
+        },
+        {
+          "name": "backbone.backbone.dark4.1.m.1.conv1.conv",
+          "input_chw": [
+            96,
+            20,
+            20
+          ],
+          "output_chw": [
+            96,
+            20,
+            20
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 76896,
+          "rtl_mac_steps": 28800,
+          "rtl_active_cycles": 48000,
+          "tile_commands": 24,
+          "output_values": 38400,
+          "scalar_checked_values": 38400,
+          "useful_macs": 3686400,
+          "input_int8_sha256": "cecda324eb3a83f249f9c11ee9cc69679e68021ee623421fa5c9b9fa5f44d157",
+          "weight_int8_sha256": "dd1ead0aeeb049f1f4d61c51e1a68511751596c2d7b2bc52203d2e777badebb5",
+          "output_int32_sha256": "9233fb97200ea796aea8dbafb8f8bd274fc8403d6401d43eb9fe8c345f9b0485"
+        },
+        {
+          "name": "backbone.backbone.dark4.1.m.1.conv2.conv",
+          "input_chw": [
+            96,
+            20,
+            20
+          ],
+          "output_chw": [
+            96,
+            20,
+            20
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 320544,
+          "rtl_mac_steps": 259200,
+          "rtl_active_cycles": 278400,
+          "tile_commands": 24,
+          "output_values": 38400,
+          "scalar_checked_values": 38400,
+          "useful_macs": 33177600,
+          "input_int8_sha256": "e896d37f5ac445120de105665fc20fdfa1f7a3918475dd5ce4070812c1ff7905",
+          "weight_int8_sha256": "df2842f04d754c59eb1595a14439e8c386808aeed045f415b2ec305107c9413c",
+          "output_int32_sha256": "d24b540aa9b307d77784cdc414a432382df1dbc87ac58017cb79b9e291ae306d"
+        },
+        {
+          "name": "backbone.backbone.dark4.1.m.2.conv1.conv",
+          "input_chw": [
+            96,
+            20,
+            20
+          ],
+          "output_chw": [
+            96,
+            20,
+            20
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 76896,
+          "rtl_mac_steps": 28800,
+          "rtl_active_cycles": 48000,
+          "tile_commands": 24,
+          "output_values": 38400,
+          "scalar_checked_values": 38400,
+          "useful_macs": 3686400,
+          "input_int8_sha256": "33e587e7a1275655a53e4ab35f6b1494c14d48d9904f3d9d0ffae8ee3a4dec1c",
+          "weight_int8_sha256": "fce488b1eea15f81f037d1b4d2ef9576c445780e769fe61ef9c177ee3165167b",
+          "output_int32_sha256": "d312f0afb7d6fbfd23ea56a4e7f0e84736c37ba936b3e30c192df530c8fd7bb5"
+        },
+        {
+          "name": "backbone.backbone.dark4.1.m.2.conv2.conv",
+          "input_chw": [
+            96,
+            20,
+            20
+          ],
+          "output_chw": [
+            96,
+            20,
+            20
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 320544,
+          "rtl_mac_steps": 259200,
+          "rtl_active_cycles": 278400,
+          "tile_commands": 24,
+          "output_values": 38400,
+          "scalar_checked_values": 38400,
+          "useful_macs": 33177600,
+          "input_int8_sha256": "acc5ba84b37d65c6e31a0968baf64207e9fbd667c4f1dbf00d533930aaf73ca9",
+          "weight_int8_sha256": "051d3d23e1df6563db9dc3cc1fd48a1d5b3c9011625e4594097f32b43ca4251b",
+          "output_int32_sha256": "d5737a54ea4331566def4819cc959489ebf6e08bbcc71e988e8f78fecff7e6a5"
+        },
+        {
+          "name": "backbone.backbone.dark4.1.conv3.conv",
+          "input_chw": [
+            192,
+            20,
+            20
+          ],
+          "output_chw": [
+            192,
+            20,
+            20
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 269136,
+          "rtl_mac_steps": 115200,
+          "rtl_active_cycles": 153600,
+          "tile_commands": 48,
+          "output_values": 76800,
+          "scalar_checked_values": 76800,
+          "useful_macs": 14745600,
+          "input_int8_sha256": "2a5ac42f7c221ff23bbf2b398846262fc54dbe88f6cbc6bfe1d6ae2a0a7e3e38",
+          "weight_int8_sha256": "1f79d66a111f39918c39ac3eef9f8fdbd813c6738158601839730a632a6b1166",
+          "output_int32_sha256": "47eb71df27e6337559ab9689a4bcab27fd664bff7457e8875d8c036eecefa807"
+        },
+        {
+          "name": "backbone.backbone.dark5.0.conv",
+          "input_chw": [
+            192,
+            20,
+            20
+          ],
+          "output_chw": [
+            384,
+            10,
+            10
+          ],
+          "kernel": 3,
+          "stride": 2,
+          "padding": 1,
+          "rtl_clock_cycles": 821664,
+          "rtl_mac_steps": 518400,
+          "rtl_active_cycles": 537600,
+          "tile_commands": 96,
+          "output_values": 38400,
+          "scalar_checked_values": 38400,
+          "useful_macs": 66355200,
+          "input_int8_sha256": "4a202b424c0942c98dd4fb7bf20135a5b0321f26f7169550aae18bdc376f0ada",
+          "weight_int8_sha256": "bd7dd1b9513cbe8badc92220fb28a9f805254fe20da5d20b8deb381b02a215ce",
+          "output_int32_sha256": "70bee6f303694abd3025768b1583d4e5c020b6be2028c49f7e89860038d759a6"
+        },
+        {
+          "name": "backbone.backbone.dark5.1.conv1.conv",
+          "input_chw": [
+            384,
+            10,
+            10
+          ],
+          "output_chw": [
+            192,
+            10,
+            10
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 125388,
+          "rtl_mac_steps": 57600,
+          "rtl_active_cycles": 67200,
+          "tile_commands": 12,
+          "output_values": 19200,
+          "scalar_checked_values": 19200,
+          "useful_macs": 7372800,
+          "input_int8_sha256": "6062cf2a869f2dbe1279edeab1301cb4a317852bf3aec7e83035ea9e8ce42f5e",
+          "weight_int8_sha256": "fbb713f8c8597ec383c3036ed45408cdc987f6a15c07ad41cd07dcd4fff3b7a8",
+          "output_int32_sha256": "28c6dd21ca5d593a1ccf59962b68bce6a78fa063a949792dc955cadaa6541024"
+        },
+        {
+          "name": "backbone.backbone.dark5.1.conv2.conv",
+          "input_chw": [
+            768,
+            10,
+            10
+          ],
+          "output_chw": [
+            384,
+            10,
+            10
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 482328,
+          "rtl_mac_steps": 230400,
+          "rtl_active_cycles": 249600,
+          "tile_commands": 24,
+          "output_values": 38400,
+          "scalar_checked_values": 38400,
+          "useful_macs": 29491200,
+          "input_int8_sha256": "faf06faefc16c619212143c597a7d1bca51bec847a1a28bdedc1596d5c295f03",
+          "weight_int8_sha256": "b5c90e1dedf1ab0ac2a034fc34043e523efff0ea01ff1e34b91a5f821cc29885",
+          "output_int32_sha256": "018cc33210eac179794dd24c106bc2890f34a14bf1ad605c0ce4c2e255148e6b"
+        },
+        {
+          "name": "backbone.backbone.dark5.2.conv1.conv",
+          "input_chw": [
+            384,
+            10,
+            10
+          ],
+          "output_chw": [
+            192,
+            10,
+            10
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 125388,
+          "rtl_mac_steps": 57600,
+          "rtl_active_cycles": 67200,
+          "tile_commands": 12,
+          "output_values": 19200,
+          "scalar_checked_values": 19200,
+          "useful_macs": 7372800,
+          "input_int8_sha256": "43839ba4d7723621c0cf4934e273465df569ab150796e49e47e9468075cf53cd",
+          "weight_int8_sha256": "8d1dc0c245ebd0204f720611dc043eacdd42e9a0103c467f0cbd07aaed5c6737",
+          "output_int32_sha256": "df0368191d23c46550cb089a73e56550b128db6316f97e4d6cc9bfce49ae7607"
+        },
+        {
+          "name": "backbone.backbone.dark5.2.conv2.conv",
+          "input_chw": [
+            384,
+            10,
+            10
+          ],
+          "output_chw": [
+            192,
+            10,
+            10
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 125388,
+          "rtl_mac_steps": 57600,
+          "rtl_active_cycles": 67200,
+          "tile_commands": 12,
+          "output_values": 19200,
+          "scalar_checked_values": 19200,
+          "useful_macs": 7372800,
+          "input_int8_sha256": "43839ba4d7723621c0cf4934e273465df569ab150796e49e47e9468075cf53cd",
+          "weight_int8_sha256": "cd1f32962019b220cbcab514db8b70b2de5fd72257ddbab7f25846273130a448",
+          "output_int32_sha256": "29fe05bb08403db1b51044545baf89255578725d300094e0ee373fd2f0192eb5"
+        },
+        {
+          "name": "backbone.backbone.dark5.2.m.0.conv1.conv",
+          "input_chw": [
+            192,
+            10,
+            10
+          ],
+          "output_chw": [
+            192,
+            10,
+            10
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 67500,
+          "rtl_mac_steps": 28800,
+          "rtl_active_cycles": 38400,
+          "tile_commands": 12,
+          "output_values": 19200,
+          "scalar_checked_values": 19200,
+          "useful_macs": 3686400,
+          "input_int8_sha256": "4837174cc3c743d092ae58d78e0b6e5c3a111c8911e8bda6cb4dd63349bf3897",
+          "weight_int8_sha256": "c8bd0d81b67e8dd33f7fae350a016f5f8e7648e27d22343c8c6451696ee42d56",
+          "output_int32_sha256": "5c470b03e3a31a495cd41c423d514a86e7cd6783f37bd3c5be22068e5dbaae23"
+        },
+        {
+          "name": "backbone.backbone.dark5.2.m.0.conv2.conv",
+          "input_chw": [
+            192,
+            10,
+            10
+          ],
+          "output_chw": [
+            192,
+            10,
+            10
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 312876,
+          "rtl_mac_steps": 259200,
+          "rtl_active_cycles": 268800,
+          "tile_commands": 12,
+          "output_values": 19200,
+          "scalar_checked_values": 19200,
+          "useful_macs": 33177600,
+          "input_int8_sha256": "08042c70ccfb78151cd5f3cd8285f90a58ecb8d157e448296be4b5f3c6934af9",
+          "weight_int8_sha256": "ad1afecbe27b92581a7921ae7279f201cdc9fda80b118236d6d65d6b85835ba6",
+          "output_int32_sha256": "38bee7c2b894b60347c607c63e32491996e22845214541397f5775dc5ff90e15"
+        },
+        {
+          "name": "backbone.backbone.dark5.2.conv3.conv",
+          "input_chw": [
+            384,
+            10,
+            10
+          ],
+          "output_chw": [
+            384,
+            10,
+            10
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 250776,
+          "rtl_mac_steps": 115200,
+          "rtl_active_cycles": 134400,
+          "tile_commands": 24,
+          "output_values": 38400,
+          "scalar_checked_values": 38400,
+          "useful_macs": 14745600,
+          "input_int8_sha256": "0d341ec480ec937d17652d9736428d45056a1f728b193ee0db68ac9bf8e7bc52",
+          "weight_int8_sha256": "38515be14e795b5acfa45463c5afb96b8e121c6e532455d8d27b6cef5164165b",
+          "output_int32_sha256": "cab90a3ba7a00d4f800004935e8cd56be455ef003f207ff7c406f3be9683e7f2"
+        },
+        {
+          "name": "backbone.lateral_conv0.conv",
+          "input_chw": [
+            384,
+            10,
+            10
+          ],
+          "output_chw": [
+            192,
+            10,
+            10
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 125388,
+          "rtl_mac_steps": 57600,
+          "rtl_active_cycles": 67200,
+          "tile_commands": 12,
+          "output_values": 19200,
+          "scalar_checked_values": 19200,
+          "useful_macs": 7372800,
+          "input_int8_sha256": "a8d3a912f6685606e016a0b54c8a7923653fab4ff50642f629d3cb51e5d5d903",
+          "weight_int8_sha256": "c679a872c75bd145a5359f7edb52b923d524da48ba8c5bade57c77aa200a8bc9",
+          "output_int32_sha256": "44837c3f590297f3cf133f739793587be7ed589a591981cf437f515ac7e70426"
+        },
+        {
+          "name": "backbone.C3_p4.conv1.conv",
+          "input_chw": [
+            384,
+            20,
+            20
+          ],
+          "output_chw": [
+            96,
+            20,
+            20
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 249912,
+          "rtl_mac_steps": 115200,
+          "rtl_active_cycles": 134400,
+          "tile_commands": 24,
+          "output_values": 38400,
+          "scalar_checked_values": 38400,
+          "useful_macs": 14745600,
+          "input_int8_sha256": "2560e89a078698708067d34c98a6adb824b4216ba2e2f003cbae8c1c6518ec13",
+          "weight_int8_sha256": "57a5578b73306080cdb908b59b565a71524902299438b7e0fb7d309fca464fe2",
+          "output_int32_sha256": "e529708b0a9cb0f35ff911dc27940615f2c1d7c90035d8775fd8fcebe770706e"
+        },
+        {
+          "name": "backbone.C3_p4.conv2.conv",
+          "input_chw": [
+            384,
+            20,
+            20
+          ],
+          "output_chw": [
+            96,
+            20,
+            20
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 249912,
+          "rtl_mac_steps": 115200,
+          "rtl_active_cycles": 134400,
+          "tile_commands": 24,
+          "output_values": 38400,
+          "scalar_checked_values": 38400,
+          "useful_macs": 14745600,
+          "input_int8_sha256": "2560e89a078698708067d34c98a6adb824b4216ba2e2f003cbae8c1c6518ec13",
+          "weight_int8_sha256": "ef143be58d1ac0abdb696b3bd1e2b1ba6ce391eea738d5fbb48f709c4e888922",
+          "output_int32_sha256": "8a172b363471f7840b63cce3eb8fce68ba79b41bf5ad79fe0c5e99d57b5b3419"
+        },
+        {
+          "name": "backbone.C3_p4.m.0.conv1.conv",
+          "input_chw": [
+            96,
+            20,
+            20
+          ],
+          "output_chw": [
+            96,
+            20,
+            20
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 76896,
+          "rtl_mac_steps": 28800,
+          "rtl_active_cycles": 48000,
+          "tile_commands": 24,
+          "output_values": 38400,
+          "scalar_checked_values": 38400,
+          "useful_macs": 3686400,
+          "input_int8_sha256": "71c5819487662524cda5443ca62ad2dd3f77082cc07afca9f98798175c557b32",
+          "weight_int8_sha256": "7ff17492c9e576ad1bb99bf372945b76709e2e12ccf11be320b76027682ebb8c",
+          "output_int32_sha256": "1342ec27385c85d292a2b2782ecac935cb659a02f83832011d9f520891a4cd0d"
+        },
+        {
+          "name": "backbone.C3_p4.m.0.conv2.conv",
+          "input_chw": [
+            96,
+            20,
+            20
+          ],
+          "output_chw": [
+            96,
+            20,
+            20
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 320544,
+          "rtl_mac_steps": 259200,
+          "rtl_active_cycles": 278400,
+          "tile_commands": 24,
+          "output_values": 38400,
+          "scalar_checked_values": 38400,
+          "useful_macs": 33177600,
+          "input_int8_sha256": "2c6a2edade65d8f88401b66806cc95114b4a91a342c53c978f7dd66e42e09dc5",
+          "weight_int8_sha256": "bc44ea5b5cc1a836d56585d976b6e37c5b828045f2a2d06f2472447777c39653",
+          "output_int32_sha256": "2727050d247e0c874af8595addf43b0c35e34e018ffb5bd4f9e8bb25c1942783"
+        },
+        {
+          "name": "backbone.C3_p4.conv3.conv",
+          "input_chw": [
+            192,
+            20,
+            20
+          ],
+          "output_chw": [
+            192,
+            20,
+            20
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 269136,
+          "rtl_mac_steps": 115200,
+          "rtl_active_cycles": 153600,
+          "tile_commands": 48,
+          "output_values": 76800,
+          "scalar_checked_values": 76800,
+          "useful_macs": 14745600,
+          "input_int8_sha256": "cd8f3e7622d56b554246a2501a0bb7a06da35bed7499eb62442bae9fea13986c",
+          "weight_int8_sha256": "fb9e01ba08ee73d072adbab2ac64af8b31b7f746d5a0e643754ce0ce0d9e7fe1",
+          "output_int32_sha256": "32f97867e43093510b039b0dc9abede45c8ac0a326fac868e73b171efdbef9e1"
+        },
+        {
+          "name": "backbone.reduce_conv1.conv",
+          "input_chw": [
+            192,
+            20,
+            20
+          ],
+          "output_chw": [
+            96,
+            20,
+            20
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 134568,
+          "rtl_mac_steps": 57600,
+          "rtl_active_cycles": 76800,
+          "tile_commands": 24,
+          "output_values": 38400,
+          "scalar_checked_values": 38400,
+          "useful_macs": 7372800,
+          "input_int8_sha256": "dd9749b86f663550babfcf101f4355c2bf51d5500a5c1f1ec1161de5b575cf5a",
+          "weight_int8_sha256": "e88952ac021e10fcb6092e24e66a537eb428faa20ace833f0b6d2cb9ebf13504",
+          "output_int32_sha256": "2c2d82d3c6c8a31b08176ae4e5791d65d48f035b999154bf4bef0ec1d08e6565"
+        },
+        {
+          "name": "backbone.C3_p3.conv1.conv",
+          "input_chw": [
+            192,
+            40,
+            40
+          ],
+          "output_chw": [
+            48,
+            40,
+            40
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 268899,
+          "rtl_mac_steps": 115200,
+          "rtl_active_cycles": 153600,
+          "tile_commands": 27,
+          "output_values": 76800,
+          "scalar_checked_values": 76800,
+          "useful_macs": 14745600,
+          "input_int8_sha256": "16579f97c6102a70188441274c3c61cb402ea43e34a3d7405ece640c02f5b1ba",
+          "weight_int8_sha256": "c5953de793c7e170b77a4cc531cc0efd48f1f492b53f448705e14a3c2648c2bd",
+          "output_int32_sha256": "675e6c40f98c0257e87f637b05f642ab378a68b4a11bba7b0f36be90e2d715a8"
+        },
+        {
+          "name": "backbone.C3_p3.conv2.conv",
+          "input_chw": [
+            192,
+            40,
+            40
+          ],
+          "output_chw": [
+            48,
+            40,
+            40
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 268899,
+          "rtl_mac_steps": 115200,
+          "rtl_active_cycles": 153600,
+          "tile_commands": 27,
+          "output_values": 76800,
+          "scalar_checked_values": 76800,
+          "useful_macs": 14745600,
+          "input_int8_sha256": "16579f97c6102a70188441274c3c61cb402ea43e34a3d7405ece640c02f5b1ba",
+          "weight_int8_sha256": "9a08fd46076c1cd2025b2277a43f13f666e97494933fda8a1209b4306dea835a",
+          "output_int32_sha256": "ffeca20348c87edc7c614ae4cbda75876c17ea7590f91d1087cb56c1d90f0dae"
+        },
+        {
+          "name": "backbone.C3_p3.m.0.conv1.conv",
+          "input_chw": [
+            48,
+            40,
+            40
+          ],
+          "output_chw": [
+            48,
+            40,
+            40
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 96045,
+          "rtl_mac_steps": 28800,
+          "rtl_active_cycles": 67200,
+          "tile_commands": 27,
+          "output_values": 76800,
+          "scalar_checked_values": 76800,
+          "useful_macs": 3686400,
+          "input_int8_sha256": "8e27ab32ac7dbbc266b127a8049ff581ca2cad74172c77c9644f08d04a1ceab3",
+          "weight_int8_sha256": "7c77394c1251f68fb555fd4d3d212c0f93927b6d906bd2731b9cfca9075dbbf9",
+          "output_int32_sha256": "ee8a8b15bb6a1ef5f5660c3b41c7cc730cec5ead4fcf5855279fc2cccf82310d"
+        },
+        {
+          "name": "backbone.C3_p3.m.0.conv2.conv",
+          "input_chw": [
+            48,
+            40,
+            40
+          ],
+          "output_chw": [
+            48,
+            40,
+            40
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 335877,
+          "rtl_mac_steps": 259200,
+          "rtl_active_cycles": 297600,
+          "tile_commands": 27,
+          "output_values": 76800,
+          "scalar_checked_values": 76800,
+          "useful_macs": 33177600,
+          "input_int8_sha256": "b645062e8054f3ef4527d04acd7fe1cdbaef653a0e6312c71f0c37ea16549e1e",
+          "weight_int8_sha256": "f3838a3d49c111ad8f7f5cfd2ec5f47e05e2a2afd962b2743467deb8a9b89ea9",
+          "output_int32_sha256": "1cc91a27642d9fbb76063afdac9f71e5edc1de04ce5fe38da773ec81a388949f"
+        },
+        {
+          "name": "backbone.C3_p3.conv3.conv",
+          "input_chw": [
+            96,
+            40,
+            40
+          ],
+          "output_chw": [
+            96,
+            40,
+            40
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 307326,
+          "rtl_mac_steps": 115200,
+          "rtl_active_cycles": 192000,
+          "tile_commands": 54,
+          "output_values": 153600,
+          "scalar_checked_values": 153600,
+          "useful_macs": 14745600,
+          "input_int8_sha256": "2b1082b70880d089593e375a78b3a9150ef4c2afc4315d905566f3cf27ad6410",
+          "weight_int8_sha256": "8b13b06e19b838184c3475ddbd670b832d5a063a40adfd672c6604fc85d004f3",
+          "output_int32_sha256": "3b47b0d4afdab24b6796594f27cdd302c5c6dcd983fbf44df6c2030c2abd3d80"
+        },
+        {
+          "name": "backbone.bu_conv2.conv",
+          "input_chw": [
+            96,
+            40,
+            40
+          ],
+          "output_chw": [
+            96,
+            20,
+            20
+          ],
+          "kernel": 3,
+          "stride": 2,
+          "padding": 1,
+          "rtl_clock_cycles": 412230,
+          "rtl_mac_steps": 259200,
+          "rtl_active_cycles": 278400,
+          "tile_commands": 54,
+          "output_values": 38400,
+          "scalar_checked_values": 38400,
+          "useful_macs": 33177600,
+          "input_int8_sha256": "0f0df1c4fe25031c6c76f1a39119251d30b70846947cb86d54da7fe0ca984c56",
+          "weight_int8_sha256": "56e8c1aeb90bbc77909683169018cd66b0d0d0fff00fa6fcdf38090a8d84c2ce",
+          "output_int32_sha256": "608948bdfceef011a2e539d9ee976d3225f38f9114e9e286ba6b19592fa35a77"
+        },
+        {
+          "name": "backbone.C3_n3.conv1.conv",
+          "input_chw": [
+            192,
+            20,
+            20
+          ],
+          "output_chw": [
+            96,
+            20,
+            20
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 134568,
+          "rtl_mac_steps": 57600,
+          "rtl_active_cycles": 76800,
+          "tile_commands": 24,
+          "output_values": 38400,
+          "scalar_checked_values": 38400,
+          "useful_macs": 7372800,
+          "input_int8_sha256": "76e2f28cb27d92c62c082866144e72dd48c891205e76ccad02c9593eac97b7c7",
+          "weight_int8_sha256": "7d5bfc30aef3e02dfa546ad79278b455eef71fcc29983be7695a16501881ec73",
+          "output_int32_sha256": "f96f91f7075fc846bbfe19887107fa24c3523d3f93bc38a85e6f696eab2c986e"
+        },
+        {
+          "name": "backbone.C3_n3.conv2.conv",
+          "input_chw": [
+            192,
+            20,
+            20
+          ],
+          "output_chw": [
+            96,
+            20,
+            20
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 134568,
+          "rtl_mac_steps": 57600,
+          "rtl_active_cycles": 76800,
+          "tile_commands": 24,
+          "output_values": 38400,
+          "scalar_checked_values": 38400,
+          "useful_macs": 7372800,
+          "input_int8_sha256": "76e2f28cb27d92c62c082866144e72dd48c891205e76ccad02c9593eac97b7c7",
+          "weight_int8_sha256": "c7f733be12ecc157213b7022232186072c9f8f4bfca535bbca493b6cc3c855a7",
+          "output_int32_sha256": "46bea12a3e819ab3cee705f27c809418e50b2d8844fc823d94db68c02764bfb8"
+        },
+        {
+          "name": "backbone.C3_n3.m.0.conv1.conv",
+          "input_chw": [
+            96,
+            20,
+            20
+          ],
+          "output_chw": [
+            96,
+            20,
+            20
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 76896,
+          "rtl_mac_steps": 28800,
+          "rtl_active_cycles": 48000,
+          "tile_commands": 24,
+          "output_values": 38400,
+          "scalar_checked_values": 38400,
+          "useful_macs": 3686400,
+          "input_int8_sha256": "8faaa3da3c9f04b1657cfec82d1c03b77797065dc2d5b0504b034c77a1f45da6",
+          "weight_int8_sha256": "f3f0000260ae78930def638fce5224559c088979f25827f497092f645e8ad486",
+          "output_int32_sha256": "a7e7148fe9f1f7e9580a98ffc9663bb96c9ce907d022eac39afca14c0d58d380"
+        },
+        {
+          "name": "backbone.C3_n3.m.0.conv2.conv",
+          "input_chw": [
+            96,
+            20,
+            20
+          ],
+          "output_chw": [
+            96,
+            20,
+            20
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 320544,
+          "rtl_mac_steps": 259200,
+          "rtl_active_cycles": 278400,
+          "tile_commands": 24,
+          "output_values": 38400,
+          "scalar_checked_values": 38400,
+          "useful_macs": 33177600,
+          "input_int8_sha256": "df5227d62ca2c13bdb03f6ac2fcf3366973d8ff6e577ddd69b48c8039ef9f514",
+          "weight_int8_sha256": "92d934ca50c76e5e23b9f5bb3a6a9ea2412f229281c73d650a814a0cd7308818",
+          "output_int32_sha256": "486711f792ad6dde93c1b347ebc66523ac5e98b272b1bc919757dd7cba0c58fe"
+        },
+        {
+          "name": "backbone.C3_n3.conv3.conv",
+          "input_chw": [
+            192,
+            20,
+            20
+          ],
+          "output_chw": [
+            192,
+            20,
+            20
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 269136,
+          "rtl_mac_steps": 115200,
+          "rtl_active_cycles": 153600,
+          "tile_commands": 48,
+          "output_values": 76800,
+          "scalar_checked_values": 76800,
+          "useful_macs": 14745600,
+          "input_int8_sha256": "95eb87a50b105d0587e7d333b615a6687e25cb03e7de4c5e0ee5f2c3f1997e81",
+          "weight_int8_sha256": "12560c25b8d5f3ea02d8fa4a43a5c0f1379066945484e21d873b28420990fbb9",
+          "output_int32_sha256": "e8d1176a89e1465308be408dfdb3c831affff33c2433ad4f402ed8e6cd2bc058"
+        },
+        {
+          "name": "backbone.bu_conv1.conv",
+          "input_chw": [
+            192,
+            20,
+            20
+          ],
+          "output_chw": [
+            192,
+            10,
+            10
+          ],
+          "kernel": 3,
+          "stride": 2,
+          "padding": 1,
+          "rtl_clock_cycles": 410832,
+          "rtl_mac_steps": 259200,
+          "rtl_active_cycles": 268800,
+          "tile_commands": 48,
+          "output_values": 19200,
+          "scalar_checked_values": 19200,
+          "useful_macs": 33177600,
+          "input_int8_sha256": "ac88937410cb1142c0ecd8c158190af8743a38dd95c75e05c7e4de44300044c4",
+          "weight_int8_sha256": "10a36a16b7cc92b88331f9ba19dbef792f59e526996f0e91e3669609251db27b",
+          "output_int32_sha256": "058ef1eddad794e4aa496e33c92784e578c8f89f66bf54be47d655ea07d9f400"
+        },
+        {
+          "name": "backbone.C3_n4.conv1.conv",
+          "input_chw": [
+            384,
+            10,
+            10
+          ],
+          "output_chw": [
+            192,
+            10,
+            10
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 125388,
+          "rtl_mac_steps": 57600,
+          "rtl_active_cycles": 67200,
+          "tile_commands": 12,
+          "output_values": 19200,
+          "scalar_checked_values": 19200,
+          "useful_macs": 7372800,
+          "input_int8_sha256": "3a707bd1dd63f8f4622995eeb3e65a45330faa35e6137013b43680a9adb2a8ce",
+          "weight_int8_sha256": "6ba8b331979c4ee853ab61ad25d04b17d7f2353022aec35fb37570c423862a46",
+          "output_int32_sha256": "88efd23094419e1afb7afeab740c645097dfe59e3d2578847b398c2d6e5adfd2"
+        },
+        {
+          "name": "backbone.C3_n4.conv2.conv",
+          "input_chw": [
+            384,
+            10,
+            10
+          ],
+          "output_chw": [
+            192,
+            10,
+            10
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 125388,
+          "rtl_mac_steps": 57600,
+          "rtl_active_cycles": 67200,
+          "tile_commands": 12,
+          "output_values": 19200,
+          "scalar_checked_values": 19200,
+          "useful_macs": 7372800,
+          "input_int8_sha256": "3a707bd1dd63f8f4622995eeb3e65a45330faa35e6137013b43680a9adb2a8ce",
+          "weight_int8_sha256": "f73f12472628d2c5fb77137092fa97a4e54c75ac771e005fa985ac02b106a231",
+          "output_int32_sha256": "3e5f933f21291f66d72f24b8404693eaf3a6921196392b1008d07e3b6c1e5c08"
+        },
+        {
+          "name": "backbone.C3_n4.m.0.conv1.conv",
+          "input_chw": [
+            192,
+            10,
+            10
+          ],
+          "output_chw": [
+            192,
+            10,
+            10
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 67500,
+          "rtl_mac_steps": 28800,
+          "rtl_active_cycles": 38400,
+          "tile_commands": 12,
+          "output_values": 19200,
+          "scalar_checked_values": 19200,
+          "useful_macs": 3686400,
+          "input_int8_sha256": "93a704a594faea4a5881ae4df6a6d719156f1a2065792b15b2c5457df7a02893",
+          "weight_int8_sha256": "f4b360ad90ee26c736357a305aa7be0952f8ea47c1d2d1858e4bba5e8a1e3f07",
+          "output_int32_sha256": "9e1b1c19528b607f353268a4dfd38d3c6b19a60589f59b83bc31ad43941bd7de"
+        },
+        {
+          "name": "backbone.C3_n4.m.0.conv2.conv",
+          "input_chw": [
+            192,
+            10,
+            10
+          ],
+          "output_chw": [
+            192,
+            10,
+            10
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 312876,
+          "rtl_mac_steps": 259200,
+          "rtl_active_cycles": 268800,
+          "tile_commands": 12,
+          "output_values": 19200,
+          "scalar_checked_values": 19200,
+          "useful_macs": 33177600,
+          "input_int8_sha256": "95c3f69fc5c0dfadacb558559bd043f619965c60a15b577568e89ccca3cc8e2e",
+          "weight_int8_sha256": "c043d0e58b803c52e24fb1c093d98b451eb9ba36734790796f369526d50e8ad7",
+          "output_int32_sha256": "164c0671fc328375b91689efe05f4739d2282b7f942d2a8a8e4cc14ad49fb431"
+        },
+        {
+          "name": "backbone.C3_n4.conv3.conv",
+          "input_chw": [
+            384,
+            10,
+            10
+          ],
+          "output_chw": [
+            384,
+            10,
+            10
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 250776,
+          "rtl_mac_steps": 115200,
+          "rtl_active_cycles": 134400,
+          "tile_commands": 24,
+          "output_values": 38400,
+          "scalar_checked_values": 38400,
+          "useful_macs": 14745600,
+          "input_int8_sha256": "2d4ec9d7e43ea7718bbb20fd789432dd81cbddb92a448a1999d63c22c98c7cd0",
+          "weight_int8_sha256": "baee335d7033ca6738dc16e3758f98667d99a4470ee5f29e4230c81067c791bb",
+          "output_int32_sha256": "81547c04653e8a1140b54c23996d808c019b3cf86a6d4d0ced827fff5428a4e5"
+        },
+        {
+          "name": "head.stems.0.conv",
+          "input_chw": [
+            96,
+            40,
+            40
+          ],
+          "output_chw": [
+            96,
+            40,
+            40
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 307326,
+          "rtl_mac_steps": 115200,
+          "rtl_active_cycles": 192000,
+          "tile_commands": 54,
+          "output_values": 153600,
+          "scalar_checked_values": 153600,
+          "useful_macs": 14745600,
+          "input_int8_sha256": "0f0df1c4fe25031c6c76f1a39119251d30b70846947cb86d54da7fe0ca984c56",
+          "weight_int8_sha256": "76840bc5bf148c51b2ebd99d22c3d03658f02995869207cec71eb850fcbc8941",
+          "output_int32_sha256": "c439911be5a5d3a386c6b0f109a9a09bc3d7dd647d622ae6411fe57f91662893"
+        },
+        {
+          "name": "head.cls_convs.0.0.conv",
+          "input_chw": [
+            96,
+            40,
+            40
+          ],
+          "output_chw": [
+            96,
+            40,
+            40
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 1266654,
+          "rtl_mac_steps": 1036800,
+          "rtl_active_cycles": 1113600,
+          "tile_commands": 54,
+          "output_values": 153600,
+          "scalar_checked_values": 153600,
+          "useful_macs": 132710400,
+          "input_int8_sha256": "aada34ac945e301ca47506ffca4d8395b7ac6d0b65b1647a515496473776cb60",
+          "weight_int8_sha256": "b76ef6485f5bb37fc9d4bd697486101753b0def30e6a0cc318756b3ea9782789",
+          "output_int32_sha256": "791e4e4125ce31d835c677657ae65fb89d29a1c2cb977bd70dcc2978b397efaf"
+        },
+        {
+          "name": "head.cls_convs.0.1.conv",
+          "input_chw": [
+            96,
+            40,
+            40
+          ],
+          "output_chw": [
+            96,
+            40,
+            40
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 1266654,
+          "rtl_mac_steps": 1036800,
+          "rtl_active_cycles": 1113600,
+          "tile_commands": 54,
+          "output_values": 153600,
+          "scalar_checked_values": 153600,
+          "useful_macs": 132710400,
+          "input_int8_sha256": "d271db158d10711a896ad7eea594fd0d52ac28d5a3cdcda4a05091909415e3db",
+          "weight_int8_sha256": "49e8f2720a3a7d6d261b60a6e692af6cb967deea373e86a3950809b46c83f243",
+          "output_int32_sha256": "eb1ed69a9ce4cfaed6338269fa18c10985f5974124e3c5367fb4c719af4f1ba5"
+        },
+        {
+          "name": "head.cls_preds.0",
+          "input_chw": [
+            96,
+            40,
+            40
+          ],
+          "output_chw": [
+            80,
+            40,
+            40
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 256105,
+          "rtl_mac_steps": 96000,
+          "rtl_active_cycles": 160000,
+          "tile_commands": 45,
+          "output_values": 128000,
+          "scalar_checked_values": 128000,
+          "useful_macs": 12288000,
+          "input_int8_sha256": "0a15da9ffbfc8cb50f4724d6cb58cbb2967d25e63bdd3c70347d75940279fe07",
+          "weight_int8_sha256": "514e4740d4a6733b11fdddef310bec8a2d662225f796bced71466394442b88c0",
+          "output_int32_sha256": "032cbf4534caaf158d723f9c8287eeb9ca1faada6754169268af8ff431526067"
+        },
+        {
+          "name": "head.reg_convs.0.0.conv",
+          "input_chw": [
+            96,
+            40,
+            40
+          ],
+          "output_chw": [
+            96,
+            40,
+            40
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 1266654,
+          "rtl_mac_steps": 1036800,
+          "rtl_active_cycles": 1113600,
+          "tile_commands": 54,
+          "output_values": 153600,
+          "scalar_checked_values": 153600,
+          "useful_macs": 132710400,
+          "input_int8_sha256": "aada34ac945e301ca47506ffca4d8395b7ac6d0b65b1647a515496473776cb60",
+          "weight_int8_sha256": "aa07745f392973b6eac846c77dc67b5691e79739dfcda22431a098214ea8bb66",
+          "output_int32_sha256": "799957e49ec7cce3935fc47644d022bedfa07ee1bf3f1c2e6430ab2ef04e6780"
+        },
+        {
+          "name": "head.reg_convs.0.1.conv",
+          "input_chw": [
+            96,
+            40,
+            40
+          ],
+          "output_chw": [
+            96,
+            40,
+            40
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 1266654,
+          "rtl_mac_steps": 1036800,
+          "rtl_active_cycles": 1113600,
+          "tile_commands": 54,
+          "output_values": 153600,
+          "scalar_checked_values": 153600,
+          "useful_macs": 132710400,
+          "input_int8_sha256": "7a2a622f1afb5e39dfb4a5f5341e49e84b0086fc875c1b3b59361ed3038666f9",
+          "weight_int8_sha256": "318ed194c02889fb71173bff38d87f7aa3851f39f01631a782be376e814219f2",
+          "output_int32_sha256": "ad61f6ee8350a2f647a5a2932035c138c96c7cc8bfcfdc3d6f9b95454ca869a7"
+        },
+        {
+          "name": "head.reg_preds.0",
+          "input_chw": [
+            96,
+            40,
+            40
+          ],
+          "output_chw": [
+            4,
+            40,
+            40
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 51221,
+          "rtl_mac_steps": 19200,
+          "rtl_active_cycles": 32000,
+          "tile_commands": 9,
+          "output_values": 6400,
+          "scalar_checked_values": 6400,
+          "useful_macs": 614400,
+          "input_int8_sha256": "1ed5b0abfa17d2eff8b2e2c6cf6510d8016eb728e66bdd573c2a36d10cc0baa8",
+          "weight_int8_sha256": "4b7111a8ee300bc7b597c906d1a3e03d06894fc9134f2ac6398b91e4ecf4aa37",
+          "output_int32_sha256": "fafed7a832c8096001fe2d13095f5b22aa16bf41733fa5f9c94e79c7d24de777"
+        },
+        {
+          "name": "head.obj_preds.0",
+          "input_chw": [
+            96,
+            40,
+            40
+          ],
+          "output_chw": [
+            1,
+            40,
+            40
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 51221,
+          "rtl_mac_steps": 19200,
+          "rtl_active_cycles": 32000,
+          "tile_commands": 9,
+          "output_values": 1600,
+          "scalar_checked_values": 1600,
+          "useful_macs": 153600,
+          "input_int8_sha256": "1ed5b0abfa17d2eff8b2e2c6cf6510d8016eb728e66bdd573c2a36d10cc0baa8",
+          "weight_int8_sha256": "fb162306ed78e1ae819a948000b60cb39f7aa6595611796e225d8bbb76b10646",
+          "output_int32_sha256": "38c5a3412eb3758838236a957a85e71435dbcfcaacb42208cd790f8622ccb163"
+        },
+        {
+          "name": "head.stems.1.conv",
+          "input_chw": [
+            192,
+            20,
+            20
+          ],
+          "output_chw": [
+            96,
+            20,
+            20
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 134568,
+          "rtl_mac_steps": 57600,
+          "rtl_active_cycles": 76800,
+          "tile_commands": 24,
+          "output_values": 38400,
+          "scalar_checked_values": 38400,
+          "useful_macs": 7372800,
+          "input_int8_sha256": "ac88937410cb1142c0ecd8c158190af8743a38dd95c75e05c7e4de44300044c4",
+          "weight_int8_sha256": "28abfbbc4bd3a41f5a15cd0496c9effb4ef12b2d55116eea982fd3af2217311f",
+          "output_int32_sha256": "999dce9dd314017cf264c556f8fad3470624a21fcdb4641ccaac79b5e259cbf3"
+        },
+        {
+          "name": "head.cls_convs.1.0.conv",
+          "input_chw": [
+            96,
+            20,
+            20
+          ],
+          "output_chw": [
+            96,
+            20,
+            20
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 320544,
+          "rtl_mac_steps": 259200,
+          "rtl_active_cycles": 278400,
+          "tile_commands": 24,
+          "output_values": 38400,
+          "scalar_checked_values": 38400,
+          "useful_macs": 33177600,
+          "input_int8_sha256": "b43c1367c8ea464bef0e8528e55771562624a96d0b355bbe386327d64ffe5c41",
+          "weight_int8_sha256": "49c6a9957ce41bbcc0b9887ea65934df1ffb4f2a3cda80a0196ae5cc25064ab8",
+          "output_int32_sha256": "db0c86eb815da41ea051a3b1301757b4120cc3b0e5096e144ba55244f3dec53a"
+        },
+        {
+          "name": "head.cls_convs.1.1.conv",
+          "input_chw": [
+            96,
+            20,
+            20
+          ],
+          "output_chw": [
+            96,
+            20,
+            20
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 320544,
+          "rtl_mac_steps": 259200,
+          "rtl_active_cycles": 278400,
+          "tile_commands": 24,
+          "output_values": 38400,
+          "scalar_checked_values": 38400,
+          "useful_macs": 33177600,
+          "input_int8_sha256": "3df06704a736b6be32f9d74d64995ea256f5241d819ef46844f3d9cfac580e44",
+          "weight_int8_sha256": "d6913691669e801d880e4fbf7759af08b5076b3a1736f5a5ea99f15cf21892ce",
+          "output_int32_sha256": "3c1701d9d2a8efcf541fcdd14a03362bf7d14741e212e051fa5c3c02bddb2bd4"
+        },
+        {
+          "name": "head.cls_preds.1",
+          "input_chw": [
+            96,
+            20,
+            20
+          ],
+          "output_chw": [
+            80,
+            20,
+            20
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 64080,
+          "rtl_mac_steps": 24000,
+          "rtl_active_cycles": 40000,
+          "tile_commands": 20,
+          "output_values": 32000,
+          "scalar_checked_values": 32000,
+          "useful_macs": 3072000,
+          "input_int8_sha256": "e7a6c44508f11a649d9c9f148bcf58a78d4c0c4a3f1310b1d0207447d0a9e87e",
+          "weight_int8_sha256": "57b4eaefc3c07bb2d556e248fb27e9f32831e9b5745d49785af1abb1ed2e922c",
+          "output_int32_sha256": "b46aafaed4dd056d4ee0ef9409fb6a51d0c6a94fd413c2902bf6a72b2f697b7f"
+        },
+        {
+          "name": "head.reg_convs.1.0.conv",
+          "input_chw": [
+            96,
+            20,
+            20
+          ],
+          "output_chw": [
+            96,
+            20,
+            20
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 320544,
+          "rtl_mac_steps": 259200,
+          "rtl_active_cycles": 278400,
+          "tile_commands": 24,
+          "output_values": 38400,
+          "scalar_checked_values": 38400,
+          "useful_macs": 33177600,
+          "input_int8_sha256": "b43c1367c8ea464bef0e8528e55771562624a96d0b355bbe386327d64ffe5c41",
+          "weight_int8_sha256": "bc5b9ef1857c60c5b55f194db405e3fe27ddb757acd54813a0297745a0bdac10",
+          "output_int32_sha256": "cfe59720045f662ec18e01e43368ea25445c67d427f1d773ab6869423739bd84"
+        },
+        {
+          "name": "head.reg_convs.1.1.conv",
+          "input_chw": [
+            96,
+            20,
+            20
+          ],
+          "output_chw": [
+            96,
+            20,
+            20
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 320544,
+          "rtl_mac_steps": 259200,
+          "rtl_active_cycles": 278400,
+          "tile_commands": 24,
+          "output_values": 38400,
+          "scalar_checked_values": 38400,
+          "useful_macs": 33177600,
+          "input_int8_sha256": "be79cbe030cafe881857809e7f9048dd2ffd33f1c7b7ea659b0c4e9d0abbab9b",
+          "weight_int8_sha256": "2ffd4ca8221ef7001e3c3e8f229d5369bbe8934d367ffb29692d016f3fc77df8",
+          "output_int32_sha256": "9b0c5c401a21948b75089890714644f9355b148b5e48ac4b2145de2669c1b993"
+        },
+        {
+          "name": "head.reg_preds.1",
+          "input_chw": [
+            96,
+            20,
+            20
+          ],
+          "output_chw": [
+            4,
+            20,
+            20
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 12816,
+          "rtl_mac_steps": 4800,
+          "rtl_active_cycles": 8000,
+          "tile_commands": 4,
+          "output_values": 1600,
+          "scalar_checked_values": 1600,
+          "useful_macs": 153600,
+          "input_int8_sha256": "00f970e6c3e8b8dc7bce6fd1014354d5a38040da21a5077ec5e0698f6c3bf311",
+          "weight_int8_sha256": "020264256711631faeba7705d157c63562ad7948cf337d57a1eff3ea2c1caf46",
+          "output_int32_sha256": "0877fea40136bd5b7ed4e3aa74cf241c1f18f90879c479ea16dd3b169afbaecc"
+        },
+        {
+          "name": "head.obj_preds.1",
+          "input_chw": [
+            96,
+            20,
+            20
+          ],
+          "output_chw": [
+            1,
+            20,
+            20
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 12816,
+          "rtl_mac_steps": 4800,
+          "rtl_active_cycles": 8000,
+          "tile_commands": 4,
+          "output_values": 400,
+          "scalar_checked_values": 400,
+          "useful_macs": 38400,
+          "input_int8_sha256": "00f970e6c3e8b8dc7bce6fd1014354d5a38040da21a5077ec5e0698f6c3bf311",
+          "weight_int8_sha256": "5bea8b127cb313d7e1a4f8e17219ebc448bad2eaf6eae5c83dd7eeba0a75708f",
+          "output_int32_sha256": "2c6e48b483a3c7cb283e4f2e8d1a55632f6ea0fcb08e0b6b12103cb69f1d6fcd"
+        },
+        {
+          "name": "head.stems.2.conv",
+          "input_chw": [
+            384,
+            10,
+            10
+          ],
+          "output_chw": [
+            96,
+            10,
+            10
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 62694,
+          "rtl_mac_steps": 28800,
+          "rtl_active_cycles": 33600,
+          "tile_commands": 6,
+          "output_values": 9600,
+          "scalar_checked_values": 9600,
+          "useful_macs": 3686400,
+          "input_int8_sha256": "194675adfba48dcaaac07f671f8b9256dbd3343cf5234b9b6a5fe1e47d53290c",
+          "weight_int8_sha256": "2e4c2081ff965dbe53c6b6e181d0e75ad041291a3bc780b6a4877d55be779993",
+          "output_int32_sha256": "b5387e93feaff2a19c1007e39509983c4644e8b05f5571fd313a0ddc83ab0d6f"
+        },
+        {
+          "name": "head.cls_convs.2.0.conv",
+          "input_chw": [
+            96,
+            10,
+            10
+          ],
+          "output_chw": [
+            96,
+            10,
+            10
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 80622,
+          "rtl_mac_steps": 64800,
+          "rtl_active_cycles": 69600,
+          "tile_commands": 6,
+          "output_values": 9600,
+          "scalar_checked_values": 9600,
+          "useful_macs": 8294400,
+          "input_int8_sha256": "07e108fe2db79f421255034b2779cab107a8101ff4bdad237f336ee8013fbe85",
+          "weight_int8_sha256": "8c29bd710afc5f25b87bf351791efc26543ef4e25f3c9e35b2b98011bd182419",
+          "output_int32_sha256": "217744c9619d53b051eab38a5b52eeebcb96db8ab55e2774c4177a39ef83a549"
+        },
+        {
+          "name": "head.cls_convs.2.1.conv",
+          "input_chw": [
+            96,
+            10,
+            10
+          ],
+          "output_chw": [
+            96,
+            10,
+            10
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 80622,
+          "rtl_mac_steps": 64800,
+          "rtl_active_cycles": 69600,
+          "tile_commands": 6,
+          "output_values": 9600,
+          "scalar_checked_values": 9600,
+          "useful_macs": 8294400,
+          "input_int8_sha256": "56805b3a676313f2bb45459eee0f3ffabe0a8a3b3b86e2d2115ea86aabd7744e",
+          "weight_int8_sha256": "39c820366973198a6ee0306430ef74821154fa9a4c67b46736a7e333033644f0",
+          "output_int32_sha256": "1dfc792b77df984119c4719dc9eddefbb4b1f74345127d72c5f586e35b0236f3"
+        },
+        {
+          "name": "head.cls_preds.2",
+          "input_chw": [
+            96,
+            10,
+            10
+          ],
+          "output_chw": [
+            80,
+            10,
+            10
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 16065,
+          "rtl_mac_steps": 6000,
+          "rtl_active_cycles": 10000,
+          "tile_commands": 5,
+          "output_values": 8000,
+          "scalar_checked_values": 8000,
+          "useful_macs": 768000,
+          "input_int8_sha256": "5f44c899383fb0651105f7747e47a9739aabc5e50aad6d980a6589bfadcb8113",
+          "weight_int8_sha256": "33f36f192b10ba8d0b0a96aaa3a511a8c82f0fe2617f617e94c7e38ea86303d9",
+          "output_int32_sha256": "4baae1df400892cacc0e1a8d11920c1ed9ceb1b83e4c56d55fcded7c979507ce"
+        },
+        {
+          "name": "head.reg_convs.2.0.conv",
+          "input_chw": [
+            96,
+            10,
+            10
+          ],
+          "output_chw": [
+            96,
+            10,
+            10
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 80622,
+          "rtl_mac_steps": 64800,
+          "rtl_active_cycles": 69600,
+          "tile_commands": 6,
+          "output_values": 9600,
+          "scalar_checked_values": 9600,
+          "useful_macs": 8294400,
+          "input_int8_sha256": "07e108fe2db79f421255034b2779cab107a8101ff4bdad237f336ee8013fbe85",
+          "weight_int8_sha256": "15d8650cd08fc418ba328f03b9310ff80d182390b76bd59f8019dc50ba78d951",
+          "output_int32_sha256": "690e7fd79418b2275e07600df931b083e98192d3fbe71b50b71281cb4524c753"
+        },
+        {
+          "name": "head.reg_convs.2.1.conv",
+          "input_chw": [
+            96,
+            10,
+            10
+          ],
+          "output_chw": [
+            96,
+            10,
+            10
+          ],
+          "kernel": 3,
+          "stride": 1,
+          "padding": 1,
+          "rtl_clock_cycles": 80622,
+          "rtl_mac_steps": 64800,
+          "rtl_active_cycles": 69600,
+          "tile_commands": 6,
+          "output_values": 9600,
+          "scalar_checked_values": 9600,
+          "useful_macs": 8294400,
+          "input_int8_sha256": "480865fb74818a3a7a045a22a9c7433600cae4c541875e941f4811525726af5d",
+          "weight_int8_sha256": "a728f1c618e51a239dbf509f6c8c62d8633acbea779d11f61d671db4ed3854cc",
+          "output_int32_sha256": "5d9f65133f1e810e569fbc77e73bde4b7b9ee7ebd93af5c9db1e68efe1590f9c"
+        },
+        {
+          "name": "head.reg_preds.2",
+          "input_chw": [
+            96,
+            10,
+            10
+          ],
+          "output_chw": [
+            4,
+            10,
+            10
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 3213,
+          "rtl_mac_steps": 1200,
+          "rtl_active_cycles": 2000,
+          "tile_commands": 1,
+          "output_values": 400,
+          "scalar_checked_values": 400,
+          "useful_macs": 38400,
+          "input_int8_sha256": "e6f87eacf93d4be5869b3fff6f9676740573ef77710dfeb800ab94edcefd7da0",
+          "weight_int8_sha256": "d3a6e7427eb73215dd81f15e849b701ea9efbbce55dc516ac576eb881c8eb49d",
+          "output_int32_sha256": "a7122a8e7b95ec06385d4015fa622763a200859c5fe62f8b6a9bab4bd8b47112"
+        },
+        {
+          "name": "head.obj_preds.2",
+          "input_chw": [
+            96,
+            10,
+            10
+          ],
+          "output_chw": [
+            1,
+            10,
+            10
+          ],
+          "kernel": 1,
+          "stride": 1,
+          "padding": 0,
+          "rtl_clock_cycles": 3213,
+          "rtl_mac_steps": 1200,
+          "rtl_active_cycles": 2000,
+          "tile_commands": 1,
+          "output_values": 100,
+          "scalar_checked_values": 100,
+          "useful_macs": 9600,
+          "input_int8_sha256": "e6f87eacf93d4be5869b3fff6f9676740573ef77710dfeb800ab94edcefd7da0",
+          "weight_int8_sha256": "9923bbb5b7d9a05d779f285773ea00c1e2dce021f2ed5f70242ac54baa9a8be4",
+          "output_int32_sha256": "613fbe1e0c9c9d1ee6032164dcbc77737c4318d8bb89fc5bf85be13b37590272"
+        }
+      ]
+    }
+  ],
+  "total_network_conv_layers": 166,
+  "total_network_int32_values_checked": 15535557,
+  "backend_regression": {
+    "result": "PASS",
+    "convolutions": 16,
+    "invalid_requests": 4,
+    "independent_reference": "NumPy INT64 einsum across channels, untiled feature map",
+    "output_values_compared": 115392,
+    "cases": [
+      {
+        "shape_hw_ci_co_k_s_p": [
+          23,
+          29,
+          17,
+          33,
+          1,
+          1,
+          0
+        ],
+        "verify": true,
+        "rtl_clock_cycles": 28035,
+        "rtl_mac_steps": 6003,
+        "rtl_active_cycles": 22011,
+        "tile_commands": 12,
+        "output_values": 22011,
+        "scalar_checked_values": 22011,
+        "output_int32_sha256": "a63034b2d5240fd3dc45f5b8792b74b43485d7658a16f9cc67f1701732929485"
+      },
+      {
+        "shape_hw_ci_co_k_s_p": [
+          23,
+          29,
+          17,
+          33,
+          1,
+          2,
+          0
+        ],
+        "verify": true,
+        "rtl_clock_cycles": 11505,
+        "rtl_mac_steps": 1620,
+        "rtl_active_cycles": 5940,
+        "tile_commands": 12,
+        "output_values": 5940,
+        "scalar_checked_values": 5940,
+        "output_int32_sha256": "84b11aaccfa038ec028e0125937d95cea1cc5b631b7837e12418bae8c2d94204"
+      },
+      {
+        "shape_hw_ci_co_k_s_p": [
+          23,
+          29,
+          17,
+          33,
+          3,
+          1,
+          1
+        ],
+        "verify": true,
+        "rtl_clock_cycles": 78639,
+        "rtl_mac_steps": 54027,
+        "rtl_active_cycles": 70035,
+        "tile_commands": 18,
+        "output_values": 22011,
+        "scalar_checked_values": 22011,
+        "output_int32_sha256": "a329e218d98517ed7cd88a161621420d34a368e7d2ab767145710ae03c00f4d6"
+      },
+      {
+        "shape_hw_ci_co_k_s_p": [
+          23,
+          29,
+          17,
+          33,
+          3,
+          2,
+          1
+        ],
+        "verify": true,
+        "rtl_clock_cycles": 26721,
+        "rtl_mac_steps": 14580,
+        "rtl_active_cycles": 18900,
+        "tile_commands": 18,
+        "output_values": 5940,
+        "scalar_checked_values": 5940,
+        "output_int32_sha256": "77589977ec415204419f49cb732f0c6fe794168288f6cf1afc1a59ac8109aced"
+      },
+      {
+        "shape_hw_ci_co_k_s_p": [
+          7,
+          9,
+          768,
+          17,
+          3,
+          2,
+          0
+        ],
+        "verify": true,
+        "rtl_clock_cycles": 34754,
+        "rtl_mac_steps": 20736,
+        "rtl_active_cycles": 20928,
+        "tile_commands": 2,
+        "output_values": 204,
+        "scalar_checked_values": 204,
+        "output_int32_sha256": "dc89fcb4fe4a54257dd746f011b11f066f81882f3d5a18fd479217be104cbc15"
+      },
+      {
+        "shape_hw_ci_co_k_s_p": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          0
+        ],
+        "verify": true,
+        "rtl_clock_cycles": 12,
+        "rtl_mac_steps": 1,
+        "rtl_active_cycles": 9,
+        "tile_commands": 1,
+        "output_values": 1,
+        "scalar_checked_values": 1,
+        "output_int32_sha256": "69d4bc192e3a16eee9b6ce51f0c32ccf947a75426b3dc430b4a48a2ab2f18bcb"
+      },
+      {
+        "shape_hw_ci_co_k_s_p": [
+          17,
+          17,
+          3,
+          5,
+          3,
+          1,
+          1
+        ],
+        "verify": true,
+        "rtl_clock_cycles": 5367,
+        "rtl_mac_steps": 2601,
+        "rtl_active_cycles": 4913,
+        "tile_commands": 4,
+        "output_values": 1445,
+        "scalar_checked_values": 1445,
+        "output_int32_sha256": "47bedf9f0619f1f01fe1bfa03a6eaa6e4f188c68e0a5c9e0029cba265d04114f"
+      },
+      {
+        "shape_hw_ci_co_k_s_p": [
+          3,
+          3,
+          8,
+          16,
+          3,
+          1,
+          1
+        ],
+        "verify": true,
+        "rtl_clock_cycles": 188,
+        "rtl_mac_steps": 81,
+        "rtl_active_cycles": 153,
+        "tile_commands": 1,
+        "output_values": 144,
+        "scalar_checked_values": 144,
+        "output_int32_sha256": "7eb6d2affadc95d3b542230c2379fe60d2d43260f8a90da9d7e4f1a92ef467c6"
+      },
+      {
+        "shape_hw_ci_co_k_s_p": [
+          23,
+          29,
+          17,
+          33,
+          1,
+          1,
+          0
+        ],
+        "verify": false,
+        "rtl_clock_cycles": 28035,
+        "rtl_mac_steps": 6003,
+        "rtl_active_cycles": 22011,
+        "tile_commands": 12,
+        "output_values": 22011,
+        "scalar_checked_values": 0,
+        "output_int32_sha256": "5fce1ad71ae825cd99eec1867e778b0912b59b94f0b276a38a25b71ac4f17856"
+      },
+      {
+        "shape_hw_ci_co_k_s_p": [
+          23,
+          29,
+          17,
+          33,
+          1,
+          2,
+          0
+        ],
+        "verify": false,
+        "rtl_clock_cycles": 11505,
+        "rtl_mac_steps": 1620,
+        "rtl_active_cycles": 5940,
+        "tile_commands": 12,
+        "output_values": 5940,
+        "scalar_checked_values": 0,
+        "output_int32_sha256": "52eb3127ee62dd3490025017d4f0952108fe1c2f78d8145bd7ca20c4a9371ea6"
+      },
+      {
+        "shape_hw_ci_co_k_s_p": [
+          23,
+          29,
+          17,
+          33,
+          3,
+          1,
+          1
+        ],
+        "verify": false,
+        "rtl_clock_cycles": 78639,
+        "rtl_mac_steps": 54027,
+        "rtl_active_cycles": 70035,
+        "tile_commands": 18,
+        "output_values": 22011,
+        "scalar_checked_values": 0,
+        "output_int32_sha256": "06a1ab9eaacfa9bc56669d74287da49504c9b2b74658f108dc202714db059dde"
+      },
+      {
+        "shape_hw_ci_co_k_s_p": [
+          23,
+          29,
+          17,
+          33,
+          3,
+          2,
+          1
+        ],
+        "verify": false,
+        "rtl_clock_cycles": 26721,
+        "rtl_mac_steps": 14580,
+        "rtl_active_cycles": 18900,
+        "tile_commands": 18,
+        "output_values": 5940,
+        "scalar_checked_values": 0,
+        "output_int32_sha256": "690cccf24e9c70fee2260bb340eae1c81448442c247f929262ba7b8bdfc0a165"
+      },
+      {
+        "shape_hw_ci_co_k_s_p": [
+          7,
+          9,
+          768,
+          17,
+          3,
+          2,
+          0
+        ],
+        "verify": false,
+        "rtl_clock_cycles": 34754,
+        "rtl_mac_steps": 20736,
+        "rtl_active_cycles": 20928,
+        "tile_commands": 2,
+        "output_values": 204,
+        "scalar_checked_values": 0,
+        "output_int32_sha256": "efc99cc93597b2314bafbd9f6da7838a5ab55e00323817a11ebfbb51b68ba315"
+      },
+      {
+        "shape_hw_ci_co_k_s_p": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          0
+        ],
+        "verify": false,
+        "rtl_clock_cycles": 12,
+        "rtl_mac_steps": 1,
+        "rtl_active_cycles": 9,
+        "tile_commands": 1,
+        "output_values": 1,
+        "scalar_checked_values": 0,
+        "output_int32_sha256": "904304d28ac791858b7c26f383f141db254f7f32a80534e2310e557ebccd0dd1"
+      },
+      {
+        "shape_hw_ci_co_k_s_p": [
+          17,
+          17,
+          3,
+          5,
+          3,
+          1,
+          1
+        ],
+        "verify": false,
+        "rtl_clock_cycles": 5367,
+        "rtl_mac_steps": 2601,
+        "rtl_active_cycles": 4913,
+        "tile_commands": 4,
+        "output_values": 1445,
+        "scalar_checked_values": 0,
+        "output_int32_sha256": "47bedf9f0619f1f01fe1bfa03a6eaa6e4f188c68e0a5c9e0029cba265d04114f"
+      },
+      {
+        "shape_hw_ci_co_k_s_p": [
+          3,
+          3,
+          8,
+          16,
+          3,
+          1,
+          1
+        ],
+        "verify": false,
+        "rtl_clock_cycles": 188,
+        "rtl_mac_steps": 81,
+        "rtl_active_cycles": 153,
+        "tile_commands": 1,
+        "output_values": 144,
+        "scalar_checked_values": 0,
+        "output_int32_sha256": "7eb6d2affadc95d3b542230c2379fe60d2d43260f8a90da9d7e4f1a92ef467c6"
+      }
+    ]
+  },
+  "backend_regression_metrics": {
+    "command": [
+      "python3",
+      "tb/check_image_backend.py",
+      "--simulator",
+      "build/image-cosim/build-validation/obj/Vadam_conv128",
+      "--output",
+      "build/image-cosim/build-validation/backend-test.json"
+    ],
+    "returncode": 0,
+    "guard_stop": null,
+    "elapsed_seconds": 0.4582129329974123,
+    "sampled_process_group_peak_rss_bytes": 63369216,
+    "minimum_linux_available_bytes": 14322343936,
+    "rss_limit_mib": 512,
+    "per_process_address_space_limit_mib": 1024,
+    "linux_reserve_mib": 2048,
+    "cpu_affinity_count": 1,
+    "nice": 19,
+    "sampling_period_seconds": 0.05,
+    "limits": "RSS is sampled, not a cgroup hard limit; Windows memory is not measured here."
+  },
+  "backend_regression_log": "build/image-cosim/build-validation/backend-test.log",
+  "fresh_build": {
+    "verilator": "Verilator 5.052 2026-09-05 rev v5.052",
+    "source_sha256": {
+      "rtl/adam/adam_mul_pair.sv": "2b6e9e7837087efefe1bd12f9866d68219ec09fdbe2bd68925c1d7d03221f935",
+      "rtl/adam/adam_sdp_ram.sv": "20d2ca02713ea7eb826535a8ec7c9131c4b9ede0598b22b254f88d9e59043d0e",
+      "rtl/adam/adam_mac128.sv": "0010667f2f53c73a219ad2ef83520a53ecf7d67cc28c2098d85361e721390f02",
+      "rtl/adam/adam_conv128.sv": "d1ef71647d2cad34c666883c61ed44a109794bf69d1ccad377b265dd09f59cb7",
+      "sim/adam_image_server.cpp": "e2f0427058ff4d315b93120fb22a5adf83d4e06e588e4e20d7abddedfae08818"
+    },
+    "build_command": [
+      "verilator",
+      "--cc",
+      "--exe",
+      "--build",
+      "-Wall",
+      "-j",
+      "1",
+      "--threads",
+      "1",
+      "--output-split",
+      "5000",
+      "--output-split-cfuncs",
+      "100",
+      "-CFLAGS",
+      "-O1 -g0",
+      "--top-module",
+      "adam_conv128",
+      "--Mdir",
+      "build/image-cosim/build-validation/obj",
+      "rtl/adam/adam_mul_pair.sv",
+      "rtl/adam/adam_sdp_ram.sv",
+      "rtl/adam/adam_mac128.sv",
+      "rtl/adam/adam_conv128.sv",
+      "sim/adam_image_server.cpp"
+    ],
+    "build_driver_sha256": "c3afd629f6f56ed686aa69973710e41756b77dbe48dce846aae860f23c81c87d",
+    "source_base_commit": "ccf91729ea4be3fdb6bf41e482a3078af67661d8",
+    "binary_sha256": "77e05148edeef4a0277ad91f2421e1e5ef2dc87b0790b059a59f90abb0e4ccd1",
+    "build_metrics": {
+      "command": [
+        "verilator",
+        "--cc",
+        "--exe",
+        "--build",
+        "-Wall",
+        "-j",
+        "1",
+        "--threads",
+        "1",
+        "--output-split",
+        "5000",
+        "--output-split-cfuncs",
+        "100",
+        "-CFLAGS",
+        "-O1 -g0",
+        "--top-module",
+        "adam_conv128",
+        "--Mdir",
+        "build/image-cosim/build-validation/obj",
+        "rtl/adam/adam_mul_pair.sv",
+        "rtl/adam/adam_sdp_ram.sv",
+        "rtl/adam/adam_mac128.sv",
+        "rtl/adam/adam_conv128.sv",
+        "sim/adam_image_server.cpp"
+      ],
+      "returncode": 0,
+      "guard_stop": null,
+      "elapsed_seconds": 8.90860491499916,
+      "sampled_process_group_peak_rss_bytes": 367865856,
+      "minimum_linux_available_bytes": 14021746688,
+      "rss_limit_mib": 512,
+      "per_process_address_space_limit_mib": 1024,
+      "linux_reserve_mib": 2048,
+      "cpu_affinity_count": 1,
+      "nice": 19,
+      "sampling_period_seconds": 0.05,
+      "limits": "RSS is sampled, not a cgroup hard limit; Windows memory is not measured here."
+    }
+  },
+  "fresh_build_log": "build/image-cosim/build-validation/build.log",
+  "build_cache_check": "Second build with same sources/tool/command reused simulator and preserved build metrics.",
+  "commands": [
+    "python3 tools/build_image_sim.py --build-dir build/image-cosim/build-validation",
+    "python3 tools/build_image_sim.py --build-dir build/image-cosim/build-validation",
+    "python3 tools/run_guarded.py --log build/image-cosim/build-validation/backend-test.log --metrics build/image-cosim/build-validation/backend-test.metrics.json -- python3 tb/check_image_backend.py --simulator build/image-cosim/build-validation/obj/Vadam_conv128 --output build/image-cosim/build-validation/backend-test.json",
+    "PYTHONPATH=build/python-deps python3 tools/run_guarded.py --rss-mib 1024 --as-mib 16384 --min-available-mib 4096 --seconds 600 --log build/dog-adam128.png.run.log --metrics build/dog-adam128.png.metrics.json -- \"$TORCH_PYTHON\" tools/detect_image.py --image build/upstream/YOLOX/assets/dog.jpg --output build/dog-adam128.png",
+    "PYTHONPATH=build/python-deps make image-detect TORCH_PYTHON=\"$TORCH_PYTHON\" SIZE=320 OUTPUT=build/dog-adam128-320.png"
+  ],
+  "environment_note": "TORCH_PYTHON is the existing film-gait Python environment; model dependencies are listed in README. Raw local logs retain actual paths.",
+  "windows_memory_readonly": {
+    "before": {
+      "available_bytes": 17062563840,
+      "committed_bytes": 24825270272,
+      "commit_limit": 38419685376
+    },
+    "after": {
+      "available_bytes": 17031102464,
+      "committed_bytes": 24779055104,
+      "commit_limit": 38419685376
+    },
+    "note": "Two read-only snapshots, not a continuous Windows/PDS memory monitor."
+  },
+  "scope": {
+    "rtl_modified": false,
+    "all_conv_results_from_verilator": true,
+    "software_conv_fallback": false,
+    "static_int8_calibration": false,
+    "coco_map_measured": false,
+    "all_graph_ops_in_rtl": false,
+    "riscv_uart_axi_ddr_simulated": false,
+    "pds_run": false,
+    "board_run": false
+  },
+  "not_rerun": "No RTL changes. Prior exhaustive primitive/backend and legacy tile regressions were not rerun; new image transport and both full network sizes were verified.",
+  "untouched": [
+    "hgb-aisystem_riscv",
+    "parent HANDOVER.md",
+    "parent OPTIMIZATION_PLAN.md",
+    "parent ITERATIONS.md",
+    "all AGENTS.md"
+  ]
+}

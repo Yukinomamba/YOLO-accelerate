@@ -5,7 +5,7 @@ RISC-V 控制的静态图像目标检测加速器。电脑传入图片，软核�
 采用 **adamgallas 的 128 MAC 卷积后端移植**，不使用摄像头。
 
 本仓库独立开发；不修改上级三个文档、任何 `AGENTS.md` 或 `hgb-aisystem_riscv`。
-当前分支为 `npu/adamgallas-128-verilator`。
+当前分支为 `sim/yolox-tiny-image-cosim`。
 
 ## 已完成与下一步
 
@@ -16,24 +16,42 @@ RISC-V 控制的静态图像目标检测加速器。电脑传入图片，软核�
 [选型报告](docs/ACCELERATOR_SELECTION.md) 保留模型和板卡评估，
 [移植约束](docs/PORTING.md) 保留完整 YOLOX、SoC 与 UART 的后续工作。
 
+已接通 **图片 → YOLOX-Tiny 全部 83 层 RTL 卷积 → 带框图片** 的联合仿真。
+SiLU、池化、图调度、量化/反量化、框解码及 NMS 在电脑上执行；
+[图片仿真说明](docs/IMAGE_SIM.md) 给出运行命令、数值路径和软硬件边界。
+
 | 已完成 | 结果 |
 | --- | --- |
 | 官方 YOLOX-Nano CPU FP32 参考 | 上游 dog.jpg 检出 3 个目标；保存权重/图片哈希与检测框 |
-| 官方 YOLOX-Tiny CPU FP32 参考 | 上游 dog.jpg 检出自行车、汽车、狗；结果见 `reports/dog-reference-tiny.json` |
+| 官方 YOLOX-Tiny CPU FP32 参考 | 上游 dog.jpg 的标签为 bicycle、car、cat；狗被模型误判为 cat，JSON 中为 class_id=15 |
+| Tiny 图片联合仿真 | 416 输入、83 层 RTL 卷积、9,760,257 个 INT32 输出全部匹配独立参考，生成 3 个带标签检测框 |
 | 两个官方计算图实际前向分析 | Tiny：5,055,855 参数，416 输入约 3.206G MAC，INT8 卷积权重约 4.805 MiB；Nano 约 0.523G MAC、0.855 MiB |
 | adamgallas 算术移植 | 16,777,216 个全部 INT8 三元组与原版及整数参考逐拍一致；RAM 1,024 项通过 |
 | 128 MAC 卷积后端 | 110 个任务、6,270 个输出像素；最大 768 输入通道、四种整图分块拼接通过 |
 | 协议与结构 | 背压、非法命令、8 次复位恢复、执行周期检查通过；展开结构确认为 128 路乘法 |
 | Verilator 严格 lint | 移植 RTL `-Wall` 通过；上游对照文件仅使用局部 waiver |
-| 本次内存 | 全新构建进程组采样峰值 350.6 MiB；卷积仿真 3.9 MiB；单 CPU/单任务运行 |
+| 内存 | 原后端构建采样峰值 350.6 MiB、单独卷积仿真 3.9 MiB；416/320 图片联合仿真为 745.4/746.9 MiB，单 CPU 运行 |
 
 源码哈希、实际命令和原始日志位置见 [128 MAC 验证报告](reports/adam128-validation.json)。
 
-当前返回 INT32 卷积结果，尚无 requant/SiLU、DMA/AXI 控制口、UART 固件或完整 YOLO 执行。
-未运行 PDS、未接入 hgb、未上板。下一步是 Tiny 的量化与其余算子、逐层调度和存储接口。
+RTL 返回 INT32 卷积结果；完整图通过电脑上的动态 INT8 量化和 FP32 剩余算子衔接。
+尚无板端 requant/SiLU、DMA/AXI 控制口或 UART 固件，未运行 PDS、未接入 hgb、未上板。
+下一步是静态量化、软核算子/调度和存储接口。
 原有自研 systolic tile 及其 404 项历史 GEMM 验证保留作独立参考。
 
 ## 运行
+
+已有 PyTorch/torchvision 环境、固定源码与权重时，一条命令输出带框图片：
+
+```bash
+PYTHONPATH=build/python-deps make image-detect TORCH_PYTHON=python \
+  IMAGE=build/upstream/YOLOX/assets/dog.jpg OUTPUT=build/dog-adam128.png
+```
+
+将 `IMAGE` 换为自己的图片即可；默认 416 输入，也支持 `SIZE=320`。
+图片旁的 JSON 记录每层校验和检测框，运行日志与内存统计也保留在 `build/`。
+见 [图片仿真说明](docs/IMAGE_SIM.md) 和 [验证记录](reports/image-cosim-validation.json)。
+下面的依赖准备部分适用于首次运行。
 
 RTL 测试需要 Python 3、Verilator 5.052（使用 JSON 展开检查）和 g++：
 
@@ -85,8 +103,10 @@ PYTHONPATH=build/python-deps python tools/reference_detect.py \
 - `rtl/adam/`：当前 128 MAC 卷积后端；`rtl/systolic*` 为原有矩阵参考。
 - `third_party/adamgallas/`：固定版本的上游原样源码、许可证与逐文件哈希。
 - `tb/`：上游算术/RAM 对照、独立标量卷积和分块参考、流控与复位测试。
-- `tools/`：RTL 回归、官方模型算子分析、预训练静态图片参考。
+- `sim/`：通过真实 RTL 端口执行完整特征图卷积的 Verilator 程序。
+- `tools/`：RTL 回归、官方模型算子分析、预训练参考和图片联合仿真。
 - `docs/ACCELERATOR_SELECTION.md`：当前模型/加速器选择、板卡容量与资源门槛。
 - `docs/ADAM128.md`：128 MAC 后端实现、接口与 Verilator 验证。
+- `docs/IMAGE_SIM.md`：图片输入/画框输出命令、完整图联合仿真与数值边界。
 - `docs/PORTING.md`：赛题解释、算子、SoC 接口与原有 tile 契约。
 - `config/`、`reports/`：固定来源和本次可核对结果。
