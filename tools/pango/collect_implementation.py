@@ -170,6 +170,8 @@ def main():
         'device': manifest['device'], 'parameters': manifest['parameters'],
         'tool_version': re.search(r'version ([^)]+)', log).group(1),
         'clock_period_ns': manifest['clock_period_ns'], 'source_sha256': manifest['files'],
+        'implementation_options': {key: manifest[key] for key in
+            ('hold_fix_enabled', 'routing_recovery', 'max_hold_paths', 'planned_placement') if key in manifest},
         'netlist_comparison': {'status': 'PASS', 'ignored_comment_prefixes': IGNORED_COMMENTS,
             'method': 'fresh mapped-functional verification' if deferred else 'canonical comparison to checked baseline',
             'identical_to_reference': original_text == new_text,

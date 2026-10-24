@@ -92,7 +92,7 @@ def main():
               'date': '2026-10-24', 'status': 'PASS',
               'source_branch': subprocess.check_output(['git', 'branch', '--show-current'], cwd=ROOT, text=True).strip(),
               'source_base_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
-              'source_identity_note': 'Changes were uncommitted during measurement; source hashes identify the exact tested implementation.',
+              'source_identity_note': 'Source hashes identify the exact tested files; source_base_commit records the checkout at collection time.',
               'verilator': npu['verilator'], 'source_sha256': hashes, 'rtl_results': results,
               'mac_structure': adam['structure'],
               'upstream_byte_integrity': {'status': 'PASS', 'files': len(third['files'])},

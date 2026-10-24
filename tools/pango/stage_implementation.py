@@ -24,6 +24,8 @@ def main():
                         help='enable documented recovery timing analysis during routing')
     parser.add_argument('--max-hold-paths', type=int,
                         help='hold repair path-count limit when routing recovery is enabled')
+    parser.add_argument('--planned-placement', action='store_true',
+                        help='plan module locations before normal placement')
     args = parser.parse_args()
     if args.max_hold_paths is not None and (not args.routing_recovery or args.max_hold_paths < 1):
         parser.error('--max-hold-paths requires --routing-recovery and a positive count')
@@ -84,6 +86,11 @@ def main():
     # (Flow-0150), so retain the exact successful ADS commands and constraints.
     route = 'route -number_of_router_thread 1 -check_clk_net_route_by_srb TRUE'
     hold = 'route_optimize -fix_hold_violation_in_route TRUE'
+    place = 'place'
+    if args.planned_placement:
+        # Installed 2025.2 reports an enum here, unlike the bundled PDF's
+        # Boolean spelling. Keep the tool-confirmed value in the staged Tcl.
+        place += ' -mode normal -planning_before_place Enable'
     if args.routing_recovery:
         route += ' -optimize_routing_recovery TRUE'
     if args.max_hold_paths is not None:
@@ -91,7 +98,7 @@ def main():
     lines = ['# Same checked RTL and ADS/FDC setup, extended through routing; no bitstream.',
              *(source/'synthesize.tcl').read_text().splitlines(),
         'dev_map',
-        'place',
+        place,
         route,
         hold,
         'report_timing -max_path 100 -nworst 3 -report_exception TRUE -report_logic_level_distribution',
@@ -114,6 +121,7 @@ def main():
         'deferred_gate_validation': bool(args.rtl_validation),
         'constraints_unchanged': True, 'hold_fix_enabled': True, 'bitstream_requested': False,
         'routing_recovery': args.routing_recovery, 'max_hold_paths': args.max_hold_paths,
+        'planned_placement': args.planned_placement,
     }
     (target/'manifest.json').write_text(json.dumps(manifest, indent=2)+'\n')
     print(f'PASS staged original-constraint physical implementation: {native}')

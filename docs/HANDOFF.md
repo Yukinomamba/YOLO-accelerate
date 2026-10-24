@@ -1,8 +1,9 @@
 # YOLO 加速器开发交接
 
 > 最新分支 `fpga/npu128-ramcompact` 的 RAM 映射压缩及接续步骤见 [RAM128.md](RAM128.md)。
-> 数值和周期验证通过，RAM 实测 126.5 DRM；首轮 hold 未通过，后续 PDS 被内存保护停止。
-> 用户要求先保存进度暂停，内存充足后再继续物理验收；当前可用的已收敛基线仍为 `ebf66d6`。
+> 已恢复此前的内存暂停；模块预规划使原 100 MHz 布线 setup/hold 通过，RAM 为 126.5 DRM。
+> setup +0.214 ns、hold +0.037 ns、未布通 0；数值、周期等价、新网表回放及总验收均通过。
+> 最新独立物理结果以 RAM128.md 和 `reports/npu128-ramcompact-validation.json` 为准，尚未上板或接入 SoC。
 
 > 后续 `fpga/npu128-prefetch` 已增加双 bank 激活预装载，接口及最新验证见
 > [PREFETCH128.md](PREFETCH128.md)。连续像素调度基线见 [THROUGHPUT128.md](THROUGHPUT128.md)。
