@@ -1,8 +1,8 @@
 # YOLO-accelerate
 
-> 2026-10-24：当前开发分支 `fpga/npu128-throughput` 在已收敛的 128 MAC 流水上优化连续像素调度。
-> Tiny 416 量化/激活场景加权卷积周期减少 24.82%，100 MHz 布线时序通过；口径、验证与资源见
-> [吞吐优化记录](docs/THROUGHPUT128.md)。下文保留各阶段分支对照。
+> 2026-10-24：当前开发分支 `fpga/npu128-prefetch` 新增激活双 bank，并已接入图片卷积服务。
+> Tiny 416 的本地装载加卷积总周期进一步减少 18.31%，100 MHz 布线通过；RAM 为 158.5 DRM36K，接近规划上限。口径与验证见
+> [预装载记录](docs/PREFETCH128.md)。下文保留各阶段分支对照。
 
 RISC-V 控制的静态图像目标检测加速器。电脑传入图片，软核调度 FPGA 卷积计算，
 再返回类别、置信度与检测框。当前以 **YOLOX-Tiny 为主、Nano 为备选**，
@@ -29,6 +29,7 @@ RISC-V 控制的静态图像目标检测加速器。电脑传入图片，软核�
 | `fpga/npu128-bringup` | 128 MAC、INT32 累加及定点量化/激活的对照实现 | 保留 `f0134a0`；已有独立综合，100 MHz 尚未收敛 |
 | `fpga/npu128-timing` | 128 MAC 地址、加法树及量化流水优化 | 独立布局布线 100 MHz 通过：setup +0.208 ns、hold +0.036 ns、未布通 0；见 `docs/IMPLEMENTATION128.md` |
 | `fpga/npu128-throughput` | 128 MAC 连续像素发射、两项结果队列及 credit 流控 | 100 MHz 布线通过：setup +0.243 ns、hold +0.036 ns；Tiny 416 加权周期减少 24.82%，NPU 增加 544 FF；见 `docs/THROUGHPUT128.md` |
+| `fpga/npu128-prefetch` | 双 bank 激活缓存，装载与计算重叠，图片服务已使用 | 100 MHz 布线通过：setup +0.193 ns、hold +0.037 ns；总周期进一步减少 18.31%，RAM 158.5 DRM36K；见 `docs/PREFETCH128.md` |
 
 早期 Nano 评估、候选选型、128 MAC 初始移植和图片仿真的阶段分支已移除，相关提交仍在
 `main` 历史中。图片复现使用标签 `baseline/adam128-image-cosim-20261023`（`658b547`）。

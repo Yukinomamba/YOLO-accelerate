@@ -28,6 +28,7 @@ def main():
     adam, npu, image_manifest, image, mapped = map(read, [build/'adam/summary-all.json',
         build/'npu/summary.json', build/'image/manifest.json', build/'image-test.json', build/'netlist/summary.json'])
     physical, profile = map(read, [args.implementation, args.profile])
+    prefetch = profile['schema'] == 'npu128-prefetch-profile-v1'
     hashes = {}
     for source in (adam, npu, image_manifest):
         for name, expected in source['source_sha256'].items():
@@ -39,11 +40,21 @@ def main():
     assert mapped['netlist_sha256'] == physical['netlist_comparison']['regenerated_sha256']
     assert physical['functional_validation'] == mapped
     assert mapped['test_sha256'] == digest(ROOT/'tb/npu_measure_top.cpp')
-    assert profile['test_sha256'] == digest(ROOT/'tb/npu_profile.cpp')
-    assert profile['profile_driver_sha256'] == digest(ROOT/'tools/profile_npu.py')
-    assert profile['comparison_driver_sha256'] == digest(ROOT/'tools/compare_npu_profiles.py')
-    for name, expected in profile['tile_evidence'][1]['source_sha256'].items():
-        assert digest(ROOT/name) == hashes[name] == physical['source_sha256'][name] == expected
+    if prefetch:
+        assert profile['profile_driver_sha256'] == digest(ROOT/'tools/profile_prefetch.py')
+        assert profile['binary_sha256'] == digest(build/'npu/prefetch/Vnpu_conv128')
+        profiled_sources = profile['source_sha256']
+        for row in profile['comparisons']:
+            assert row['serial']['cycles']-row['prefetch']['cycles'] == row['prefetch']['overlap_writes']
+    else:
+        assert profile['test_sha256'] == digest(ROOT/'tb/npu_profile.cpp')
+        assert profile['profile_driver_sha256'] == digest(ROOT/'tools/profile_npu.py')
+        assert profile['comparison_driver_sha256'] == digest(ROOT/'tools/compare_npu_profiles.py')
+        profiled_sources = profile['tile_evidence'][1]['source_sha256']
+    for name, expected in profiled_sources.items():
+        assert digest(ROOT/name) == hashes[name] == expected
+        if name.startswith('rtl/'):
+            assert physical['source_sha256'][name] == expected
     third = read(ROOT/'third_party/adamgallas/manifest.json')
     for name, item in third['files'].items():
         assert digest(ROOT/'third_party/adamgallas'/name) == item['sha256']
@@ -60,9 +71,16 @@ def main():
         hashes[name] = digest(ROOT/name)
     evidence = [build/'adam/summary-all.json', build/'npu/summary.json', build/'image/manifest.json',
                 build/'image-test.json', build/'image-test.metrics.json', build/'netlist/summary.json',
-                build/'baseline-profile/summary.json', build/'optimized-profile/summary.json',
                 args.implementation, args.profile]
-    report = {'schema': 'npu128-throughput-validation-v1', 'date': '2026-10-24', 'status': 'PASS',
+    if prefetch:
+        evidence += [build/'profile/summary.json', build/'profile/workloads.txt', build/'profile/run.log']
+        for name in ('tools/profile_prefetch.py', 'tools/pango/stage.py',
+                     'config/board-budget.json', 'config/yolox-tiny.lock.json'):
+            hashes[name] = digest(ROOT/name)
+    else:
+        evidence += [build/'baseline-profile/summary.json', build/'optimized-profile/summary.json']
+    report = {'schema': 'npu128-prefetch-validation-v1' if prefetch else 'npu128-throughput-validation-v1',
+              'date': '2026-10-24', 'status': 'PASS',
               'source_branch': subprocess.check_output(['git', 'branch', '--show-current'], cwd=ROOT, text=True).strip(),
               'source_base_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
               'source_identity_note': 'Changes were uncommitted during measurement; source hashes identify the exact tested implementation.',
@@ -80,8 +98,34 @@ def main():
               'route_run': True, 'board_run': False, 'full_yolox_accuracy_rerun': False,
               'limitations': ['Standalone measurement harness, automatic IO placement; no integrated CPU/DDR/PLL timing.',
                   'Gate replay compresses serial shifts and omits performance-counter comparison; no SDF.',
-                  'Profiles measure representative zero-data tiles weighted by recorded model shapes, not end-to-end inference.',
+                  'Profiles execute recorded model tile shapes with zero data, not end-to-end inference.',
                   'Local-port load costs exclude CPU, DDR/DMA, non-convolution operators, communication and coefficient configuration.']}
+    if prefetch:
+        budget = read(ROOT/'config/board-budget.json')['engineering_targets_not_measurements']
+        npu_resource = physical['resources']['u_npu(npu_conv128)']
+        assert npu_resource['DRM'] <= budget['npu_drm36k_ceiling']
+        assert npu_resource['LUT'] <= budget['npu_lut6_ceiling']
+        assert npu_resource['APM'] <= budget['npu_apm_ceiling']
+        prior_path = ROOT/'reports/npu128-throughput-validation.json'
+        previous = read(prior_path)['image_transport']['cases']
+        assert len(previous) == len(image['cases'])
+        comparisons = []
+        for old, new in zip(previous, image['cases']):
+            for key in ('shape_hw_ci_co_k_s_p', 'verify', 'rtl_mac_steps', 'rtl_active_cycles',
+                        'tile_commands', 'output_values', 'output_int32_sha256'):
+                assert old[key] == new[key], (old['shape_hw_ci_co_k_s_p'], key)
+            multi = old['tile_commands'] > (old['shape_hw_ci_co_k_s_p'][3]+15)//16
+            assert new['rtl_clock_cycles'] < old['rtl_clock_cycles'] if multi else new['rtl_clock_cycles'] == old['rtl_clock_cycles']
+            comparisons.append({'shape_hw_ci_co_k_s_p': old['shape_hw_ci_co_k_s_p'], 'verify': old['verify'],
+                'before_cycles': old['rtl_clock_cycles'], 'after_cycles': new['rtl_clock_cycles'],
+                'output_int32_sha256': new['output_int32_sha256']})
+        report['image_transport_comparison'] = {'baseline_sha256': digest(prior_path),
+            'status': 'PASS', 'cases': comparisons, 'scope': 'same seeded nonzero tensors, bit-identical outputs and unchanged active/MAC cycles'}
+        report['activation_buffers'] = {'banks': 2, 'words_per_bank': 24576, 'word_bits': 64,
+            'busy_write_rule': 'only the inactive bank accepts writes; the NPU protects its active bank through final postprocess delivery'}
+        report['engineering_budget'] = {'status': 'PASS', 'drm36k_ceiling': budget['npu_drm36k_ceiling'],
+            'lut_ceiling': budget['npu_lut6_ceiling'], 'apm_ceiling': budget['npu_apm_ceiling'],
+            'scope': 'repository NPU planning ceilings; not current integrated SoC free-resource measurements'}
     args.output.write_text(json.dumps(report, indent=2)+'\n')
     print('PASS current-source RTL/image/mapped/profile/routed evidence; upstream byte integrity intact')
 

@@ -1,5 +1,7 @@
 # NPU 定点后处理与独立 PDS 工程
 
+> 双 bank 分支新增 `act_wr_bank`、`cmd_act_bank`，忙时允许装载非活动 bank；见 [PREFETCH128.md](PREFETCH128.md)。
+
 > 2026-10-24：本文件保留 `fpga/npu128-bringup` 的历史结果。
 > `fpga/npu128-timing` 的流水修改与新结果见 [128 MAC 时序优化](TIMING128.md)。
 

@@ -1,5 +1,7 @@
 # 128 MAC 连续像素调度（2026-10-24）
 
+后续激活双 bank 预装载与新的端口约定见 [PREFETCH128.md](PREFETCH128.md)；本页保留连续像素物理基线。
+
 分支 `fpga/npu128-throughput` 基于已完成 100 MHz 布线的 `e1510bd`。
 本轮保持 128 INT8 MAC、5 级地址流水、7 拍 MAC、6 级定点后处理及全部外部接口，
 优化像素之间的流水排空开销。上一版物理基线见 [IMPLEMENTATION128.md](IMPLEMENTATION128.md)。

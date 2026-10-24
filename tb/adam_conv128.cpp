@@ -32,6 +32,7 @@ public:
     uint64_t cycles = 0, outputs = 0, convolutions = 0, resets = 0;
     Bench() : d{single_thread(context)} { clear_inputs(); reset(); }
     void clear_inputs() {
+        d.act_wr_bank = 0; d.cmd_act_bank = 0;
         d.cmd_valid = 0; d.act_wr_valid = 0; d.weight_wr_valid = 0; d.out_ready = 0;
     }
     void eval() { d.clk = 0; d.eval(); }
@@ -55,8 +56,9 @@ public:
             t.bias[oc] = pattern == 4 ? (oc & 1 ? 0x80000000u : 0x7fffffffu) : uint32_t(int(random()%20001)-10000);
         return t;
     }
-    void load(const Case& t) {
+    void load(const Case& t, unsigned bank=0) {
         clear_inputs(); require(!d.busy, "load while busy");
+        d.act_wr_bank=bank;
         for (int pixel = 0; pixel < t.w*t.h; ++pixel) {
             for (int group = 0; group < t.groups(); ++group) {
                 d.act_wr_data = 0;
@@ -94,8 +96,8 @@ public:
         d.cmd_kernel3=t.k==3; d.cmd_stride2=t.stride==2; d.cmd_pad=t.pad;
         for (int oc=0; oc<16; ++oc) d.cmd_bias[oc]=t.bias[oc];
     }
-    void start(const Case& t) {
-        clear_inputs(); descriptor(t); d.cmd_valid=1; eval();
+    void start(const Case& t, unsigned bank=0) {
+        clear_inputs(); d.act_wr_bank=bank; d.cmd_act_bank=bank; descriptor(t); d.cmd_valid=1; eval();
         require(d.cmd_ready, "command not accepted"); tick(); d.cmd_valid=0;
         require(d.busy && !d.cmd_error, "valid descriptor rejected");
     }
@@ -171,7 +173,7 @@ public:
         for (int i=0;i<9;++i) { tick(); require(!d.done && !d.out_valid, "stale completion/result"); }
         ++convolutions;
     }
-    void run(const Case& t, bool stalls=true) { load(t); start(t); finish(t,nullptr,stalls); }
+    void run(const Case& t, bool stalls=true, unsigned bank=0) { load(t,bank); start(t,bank); finish(t,nullptr,stalls); }
     void tiled_image(int kernel, int stride) {
         // Cross both the 16x16 input-tile and 16-output-channel boundaries.
         // Golden outputs come from the untiled full image, not local tile convolution.
@@ -256,6 +258,7 @@ int main(int argc, char** argv) {
         b.run(b.make_case(16,16,8,16,1,1,0));
         b.run(b.make_case(16,16,24,16,3,2,1));
         b.run(b.make_case(16,16,768,16,3,1,1));
+        b.run(b.make_case(16,16,768,16,3,1,1),true,1); // bank 1, all 24,576 words and highest read address
         for (int ci : {48,96,192,384,768}) b.run(b.make_case(3,3,ci,16,3,1,1));
         for (int pattern : {1,2,3,4}) b.run(b.make_case(3,3,768,16,3,1,1,pattern));
         for (int k : {1,3}) for (int stride : {1,2}) b.tiled_image(k,stride);

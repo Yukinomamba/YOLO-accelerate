@@ -89,7 +89,8 @@ def main():
     manifest = {
         'schema': 'npu128-pango-implementation-v1', 'top': prior['top'],
         'device': prior['device'], 'clock_period_ns': prior['clock_period_ns'],
-        'threads': 1, 'parameters': prior['parameters'],
+        'threads': 1, 'parameters': {**prior['parameters'], 'activation_banks': 2,
+                                    'activation_words_per_bank': 24576, 'measurement_input_bits': 1716},
         'source_base_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
         'source_branch': subprocess.check_output(['git', 'branch', '--show-current'], cwd=ROOT, text=True).strip(),
         'source_status': subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT, text=True).splitlines(),

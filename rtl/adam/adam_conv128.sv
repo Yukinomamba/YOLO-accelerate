@@ -14,6 +14,7 @@ module adam_conv128 #(
 ) (
     input  logic clk,
     input  logic rst,
+    input  logic act_wr_bank,
     input  logic act_wr_valid,
     output logic act_wr_ready,
     input  logic [ACT_AW-1:0] act_wr_addr,
@@ -23,6 +24,7 @@ module adam_conv128 #(
     input  logic [WEIGHT_AW-1:0] weight_wr_addr,
     input  logic [1023:0] weight_wr_data,
     input  logic cmd_valid,
+    input  logic cmd_act_bank,
     output logic cmd_ready,
     input  logic [7:0] cmd_width,
     input  logic [7:0] cmd_height,
@@ -50,6 +52,8 @@ module adam_conv128 #(
     typedef enum logic {IDLE, ACTIVE} state_t;
     state_t state_q;
     logic cmd_fire, out_fire, descriptor_ok;
+    logic active_bank_q;
+    logic [63:0] act_bank_data [2];
     logic [7:0] width_q, height_q, out_width_q, out_height_q;
     localparam int GROUP_W = (GROUPS < 2) ? 1 : $clog2(GROUPS + 1);
     localparam int PIXEL_W = (MAX_SIDE < 2) ? 1 : $clog2(MAX_SIDE * MAX_SIDE);
@@ -87,9 +91,10 @@ module adam_conv128 #(
     int proposed_width, proposed_height;
 
     assign busy = state_q != IDLE;
-    // 装载优先于命令。忙时禁止改写缓存，复位期间禁止任何握手。
+    // 装载优先于命令。计算期间只允许写非活动 bank，复位禁止任何握手。
     // 窄无符号量先补零再转 int；ADS 2025.2 对直接 int'(x) 的扩展与 Verilator 不同。
-    assign act_wr_ready = !rst && !busy && int'({1'b0, act_wr_addr}) < ACT_DEPTH;
+    assign act_wr_ready = !rst && (!busy || act_wr_bank != active_bank_q) &&
+                          int'({1'b0, act_wr_addr}) < ACT_DEPTH;
     assign weight_wr_ready = !rst && !busy && int'({1'b0, weight_wr_addr}) < WEIGHT_DEPTH;
     assign cmd_ready = !rst && !busy && !act_wr_valid && !weight_wr_valid;
     assign cmd_fire = cmd_valid && cmd_ready;
@@ -165,10 +170,15 @@ module adam_conv128 #(
         end
     end
 
-    adam_sdp_ram #(.WIDTH(64), .DEPTH(ACT_DEPTH), .ADDR_W(ACT_AW)) u_activation_ram (
-        .clk, .wr_en(act_wr_valid && act_wr_ready), .wr_addr(act_wr_addr), .wr_data(act_wr_data),
-        .rd_en(!rst && addr_valid_q[ADDR_STAGES-1] && !padding_q4), .rd_addr(act_rd_addr), .rd_data(act_rd_data)
-    );
+    for (genvar bank = 0; bank < 2; bank++) begin : g_activation_bank
+        adam_sdp_ram #(.WIDTH(64), .DEPTH(ACT_DEPTH), .ADDR_W(ACT_AW)) u_ram (
+            .clk, .wr_en(act_wr_valid && act_wr_ready && act_wr_bank == 1'(bank)),
+            .wr_addr(act_wr_addr), .wr_data(act_wr_data),
+            .rd_en(!rst && addr_valid_q[ADDR_STAGES-1] && !padding_q4 && active_bank_q == 1'(bank)),
+            .rd_addr(act_rd_addr), .rd_data(act_bank_data[bank])
+        );
+    end
+    assign act_rd_data = active_bank_q ? act_bank_data[1] : act_bank_data[0];
     adam_sdp_ram #(.WIDTH(1024), .DEPTH(WEIGHT_DEPTH), .ADDR_W(WEIGHT_AW)) u_weight_ram (
         .clk, .wr_en(weight_wr_valid && weight_wr_ready), .wr_addr(weight_wr_addr), .wr_data(weight_wr_data),
         .rd_en(!rst && addr_valid_q[ADDR_STAGES-1]), .rd_addr(weight_rd_addr), .rd_data(weight_rd_data)
@@ -257,6 +267,7 @@ module adam_conv128 #(
     always_ff @(posedge clk) begin
         if (rst) begin
             state_q <= IDLE;
+            active_bank_q <= 1'b0;
             cmd_error <= 1'b0;
             done <= 1'b0;
             width_q <= '0;
@@ -306,6 +317,7 @@ module adam_conv128 #(
                             out_y <= '0;
                             issue_x_q <= '0;
                             issue_y_q <= '0;
+                            active_bank_q <= cmd_act_bank;
                             issued_all_q <= 1'b0;
                             group_q <= '0;
                             tap_x_q <= '0;

@@ -1,5 +1,8 @@
 # YOLO 加速器开发交接
 
+> 后续 `fpga/npu128-prefetch` 已增加双 bank 激活预装载，接口及最新验证见
+> [PREFETCH128.md](PREFETCH128.md)。连续像素调度基线见 [THROUGHPUT128.md](THROUGHPUT128.md)。
+
 > 2026-10-24 接手补充：用户已要求恢复 128 MAC 时序优化与独立物理评估。
 > 新分支 `fpga/npu128-timing` 的变更、测试及新证据见 [TIMING128.md](TIMING128.md)。
 > 以下是 2026-10-23 的历史交接快照，其中“本次暂缓”描述的是当时交付范围。
