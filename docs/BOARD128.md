@@ -1,9 +1,41 @@
 # 27 MHz UART 诊断上板记录
 
 2026-10-24，分支 `fpga/npu128-uart`，本轮从 `71a5d99` 接续。
-**已完成实际 FPGA 的临时 JTAG 下载、回读校验和配置状态检查；串口卷积自检待做。**
+**实际 JTAG 配置/回读及 CP2102 串口卷积自检均已通过。**
 本轮没有修改 RTL、引脚或时钟约束，原 27 MHz 布线证据继续有效。
 计算核独立 100 MHz 结果与完整外围的频率边界仍按 [UART128.md](UART128.md) 区分。
+
+## 最新 UART 数值验收
+
+更换数据线后，CP2102 已枚举；最初错误码 28 表示缺少驱动。经 Windows 管理员授权安装
+微软目录提供的 Silicon Labs CP210x `11.5.0.417`，目录和 x64 驱动签名均有效，设备错误码归零。
+实际端口为 **COM11**，USB VID:PID 为 `10c4:ea60`。驱动包来源与哈希见
+[驱动安装记录](../reports/cp2102-driver-validation.json) 和
+[Microsoft Update Catalog 条目](https://www.catalog.update.microsoft.com/ScopedViewInline.aspx?updateid=32293688-4758-4334-98c0-7d634cf3c59e)。
+
+[真实 UART 验收报告](../reports/npu128-uart-hardware-validation.json) 状态 PASS：
+
+| 项目 | 实测结果 |
+| --- | --- |
+| 链路 | CP2102 COM11，115200 baud、8N1 |
+| 识别 | ID `0x4e505531`、ABI `0x10000`，测试前 STATUS=0 |
+| 任务 | 三组：1×1 RAW、3×3 量化、3×3 LUT，输入通道 8/9，两个 bank |
+| 输出 | 12 个向量，192 个 RAW 和 192 个 INT8 槽位逐值匹配标量参考 |
+| 每任务 MAC 步计数 | 4 / 72 / 72，全部符合参考 |
+| 实际事务 | 2,759 次，重传 0 |
+| 主机端总耗时 | 74.891 秒，包含 USB/串口和软件开销，不能作为 NPU 计算延迟 |
+
+每个向量同时检查有效通道/坐标、mode/last 标志；每任务确认 DONE、BUSY/OUTPUT_VALID/ERROR
+和 ERRORS 寄存器的结束状态。数值覆盖 INT32 回绕、量化舍入/饱和、LUT 与尾通道屏蔽。
+这些是三组小 tile 的实测，不是完整 YOLOX 推理或精度验收。
+物理链路没有人为注入丢包；重试/异常覆盖仍由单独的 RTL 报告提供。
+
+本轮使用既有已下载位流，未重新配置 FPGA、修改 RTL 或约束。
+新脚本 [run_uart_board_test.py](../tools/run_uart_board_test.py) 会核对当前源码与功能报告，
+仅接受指定的 CP2102 端口，调用原主机客户端和标量参考，并保存独立硬件 JSON。
+报告引用此前同一配置的 JTAG 证据，本轮 UART 测试没有重新扫描 JTAG。
+此前 [上板报告](../reports/npu128-uart-board.json) 中的 `UART_PENDING` 是当时的历史快照，保留原文件。
+本轮原始识别输出、数值报告及驱动安装日志位于 `F:\pango-project\work\npu128-uart-serial-20261024a`。
 
 ## 已完成的实际硬件检查
 
@@ -18,9 +50,9 @@
 | 配置状态寄存器 | `0x001ffca0` |
 | DONE | bit 12 = 1 |
 | 错误检查 | `status & 0x1800001f = 0`，含配置 CRC、ID、认证、回读 CRC、超时及过温/局部重配错误 |
-| KEY0 | 用户已确认按下并松开；尚未通过 UART 读取复位后的状态 |
+| KEY0 | 用户已确认按下并松开；本轮 UART 识别读到 STATUS=0 |
 
-此结果证明 FPGA 配置下载和回读正确，不表示板上卷积数值已经通过。
+这组 JTAG 结果验证 FPGA 配置下载和回读；卷积数值由上面的独立 UART 测试验收。
 未写外部 Flash、eFuse 或密钥。断电后本临时配置消失，重新供电需再次下载。
 实际日志和 SHA-256 见 [上板报告](../reports/npu128-uart-board.json)，
 报告状态明确为 `JTAG_PASS_UART_PENDING`。
@@ -75,16 +107,13 @@ gen_bit_stream -force_to_run \
 生成尝试全部保留：`bitstream-20261024a` 参数互斥失败；`b` 因 PDS 意外启动依赖重跑而主动中止；
 `c` 生成成功但 SCBV 未设置，拒绝用于下载；最终仅下载 `d`。原始日志和停止记录哈希写入上板报告。
 
-## 串口目前的边界
+## 串口接线排查记录（已解决）
 
-Windows PnP 与 pyserial 均只检测到 FTDI `0403:6010` 的 COM9/COM10，以及蓝牙串口。
-**未枚举到板载 CP2102，不能把 COM9/COM10 当作本顶层 UART。**
-没有打开这些串口，也没有发送卷积命令。用户暂时不能更换 UART 数据线；
-尚不能确定是线材、接口还是其他连接问题。当前没有出现带 CP2102 VID 的未知设备，
-因此没有安装额外的系统 USB 驱动。
+上一阶段 Windows PnP 与 pyserial 只检测到 FTDI `0403:6010` 的 COM9/COM10，以及蓝牙串口。
+当时未枚举到 CP2102，也没有打开这些无关串口。后来更换数据线，CP2102 出现错误码 28，
+安装上述已签名 VCP 驱动后成为 COM11。COM9/COM10 仍属于下载器。
 
-待一根能传数据的 USB 线接到板载 USB-UART Type-C、系统出现 CP2102 串口后，
-继续执行识别和三组数值自检。pyserial 3.5 已隔离安装在原生工作目录，未修改全局 Python。
+pyserial 3.5 已隔离安装在原生工作目录，未修改全局 Python。
 本次下载的 wheel SHA-256 为
 `c4451db6ba391ca6ca299fb3ec7bae67a5c55dde170964c7a14ceefec02f2cf0`。
 
@@ -96,6 +125,12 @@ $uartPython='C:\Users\HP\.cache\codex-runtimes\codex-primary-runtime\dependencie
 & $uartPython -X utf8 -m serial.tools.list_ports -v
 & $uartPython -X utf8 F:\pango-project\work\npu128-uart-board-20261024a\host\npu_uart.py --port COMx
 & $uartPython -X utf8 F:\pango-project\work\npu128-uart-board-20261024a\host\npu_uart.py --port COMx --self-test
+```
+
+在仓库根目录运行以下命令可保存新的、绑定源码和前次 JTAG 证据的硬件报告，输出文件必须尚不存在：
+
+```powershell
+& $uartPython -X utf8 tools/run_uart_board_test.py --port COM11 --output build/uart-hardware-recheck.json
 ```
 
 保持 FPGA 本次配置未掉电，配置后先按 KEY0。识别预期 ID `0x4e505531`、ABI `0x10000`。
@@ -127,4 +162,5 @@ Windows RemoteSigned 策略不接受直接执行 UNC 上的未签名脚本时，
 `GuardedJob.cs` 复制到新的原生目录执行；不需要更改系统执行策略。
 服务启动使用 `Start-Process ... -WindowStyle Hidden`，下载器/串口选择按实际枚举结果核对。
 
-下次接续优先完成 UART ID/ABI 和三组小卷积；之后再给 MMIO 装载控制增加流水、评估完整顶层 100 MHz。
+下一步给 MMIO 装载控制增加流水、降低控制扇出，重新评估包含外围的 100 MHz。
+当前完整顶层仍是已验收的 27 MHz，JTAG/UART 成功不改变其频率结论。

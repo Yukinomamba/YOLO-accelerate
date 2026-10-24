@@ -2,7 +2,8 @@
 
 > 实际板卡接续见 [BOARD128.md](BOARD128.md)：27 MHz 诊断位流已生成，PG2L200H 的 JTAG 临时下载、
 > 回读、usercode `12802701`、DONE/错误状态通过；KEY0 用户已按。未写 Flash/eFuse。
-> CP2102 尚未枚举，用户暂不能更换 UART 线，因此串口 ID/ABI 与卷积数值验收仍待完成。
+> 更换数据线并安装已签名 CP210x 驱动后，COM11 的 ID/ABI 与三组卷积实测通过：12 向量、
+> 384 个 RAW/INT8 值一致，2,759 次事务、零重传。原 `UART_PENDING` 报告作为历史快照保留。
 
 > 最新分支 `fpga/npu128-uart` 的真实管脚顶层、UART→MMIO 桥及 Python 客户端见 [UART128.md](UART128.md)。
 > 27 MHz 原生时钟下，2,777 次事务和三组卷积完整引脚仿真、103 帧字节级 GTP 网表回放通过。
