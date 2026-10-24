@@ -21,6 +21,9 @@ def main():
     parser.add_argument('--port', required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--timeout', type=float, default=1)
+    parser.add_argument('--rtl-validation', type=Path, default=ROOT/'reports/npu128-uart-validation.json')
+    parser.add_argument('--jtag-validation', type=Path, default=ROOT/'reports/npu128-uart-board.json')
+    parser.add_argument('--bitstream-validation', type=Path, default=ROOT/'reports/npu128-uart-bitstream.json')
     args = parser.parse_args()
     if args.output.exists():
         parser.error('preserve previous evidence; choose a new output file')
@@ -29,14 +32,14 @@ def main():
     matches = [p for p in comports() if p.device.casefold() == args.port.casefold()]
     if len(matches) != 1 or (matches[0].vid, matches[0].pid) != (0x10c4, 0xea60):
         parser.error('port must be the present CP2102 VID:PID=10c4:ea60, not the FTDI JTAG or Bluetooth port')
-    functional_path = ROOT/'reports/npu128-uart-validation.json'
-    jtag_path = ROOT/'reports/npu128-uart-board.json'
-    bit_path = ROOT/'reports/npu128-uart-bitstream.json'
+    functional_path, jtag_path, bit_path = args.rtl_validation, args.jtag_validation, args.bitstream_validation
     functional, jtag, bit = [json.loads(p.read_text(encoding='utf-8')) for p in (functional_path, jtag_path, bit_path)]
     assert functional['status'] == bit['status'] == 'PASS'
     assert jtag['jtag_readback_verified'] and jtag['done'] and jtag['configuration_error_bits'] == 0
     assert jtag['bitstream_sha256'] == bit['bitstream_sha256']
     assert jtag['bitstream_validation_sha256'] == digest(bit_path)
+    assert functional['default_parameters']['CLOCK_HZ'] == bit['clock_hz'] == jtag['clock_hz']
+    assert bit['immutable_sha256']['input/rtl-validation.json'] == digest(functional_path)
     for name, expected in functional['source_sha256'].items():
         assert digest(ROOT/name) == expected, name
     source_hashes = {'tools/npu_uart.py': digest(ROOT/'tools/npu_uart.py'),
@@ -46,7 +49,7 @@ def main():
         'timestamp_utc': datetime.now(timezone.utc).isoformat(), 'port': matches[0].device,
         'usb_vid': '10c4', 'usb_pid': 'ea60', 'pyserial': serial.__version__,
         'python': platform.python_version(), 'host': platform.platform(),
-        'baud': 115200, 'timeout_seconds': args.timeout, 'source_sha256': source_hashes,
+        'baud': 115200, 'clock_hz': bit['clock_hz'], 'timeout_seconds': args.timeout, 'source_sha256': source_hashes,
         'rtl_validation_sha256': digest(functional_path), 'jtag_reference_sha256': digest(jtag_path),
         'bitstream_validation_sha256': digest(bit_path), 'bitstream_sha256': bit['bitstream_sha256'],
         'board_run': True, 'simulator_used': False,

@@ -39,10 +39,12 @@ def reply(frame, sequence):
 
 class SimulatorWire:
     """Only public UART/reset pins, at the real default divider and timeout."""
-    def __init__(self, executable):
+    def __init__(self, executable, clock_hz=27000000):
         self.process = subprocess.Popen([str(Path(executable).resolve())], stdin=subprocess.PIPE,
             stdout=subprocess.PIPE, text=True, bufsize=1)
-        if self.process.stdout.readline().strip() != 'READY 234 2700000':
+        self.clock_hz = clock_hz
+        self.divisor, self.interbyte_timeout = (clock_hz+57600)//115200, clock_hz//10
+        if self.process.stdout.readline().strip() != f'READY {self.divisor} {self.interbyte_timeout}':
             raise RuntimeError('unexpected simulator configuration')
         self.frames = 0
         self.drop_replies = self.corrupt_replies = 0
@@ -282,10 +284,12 @@ def main():
     source.add_argument('--port')
     source.add_argument('--simulator', type=Path)
     parser.add_argument('--baud', type=int, default=115200)
+    parser.add_argument('--clock-hz', type=int, choices=[27000000, 100000000], default=27000000,
+                        help='simulator component clock; physical UART still uses --baud')
     parser.add_argument('--timeout', type=float, default=1)
     parser.add_argument('--self-test', action='store_true', help='resets the diagnostic NPU and replaces test input/weights/configuration')
     args = parser.parse_args()
-    wire = SimulatorWire(args.simulator) if args.simulator else SerialWire(args.port, args.baud, args.timeout)
+    wire = SimulatorWire(args.simulator, args.clock_hz) if args.simulator else SerialWire(args.port, args.baud, args.timeout)
     try:
         client = Client(wire)
         client.sync()

@@ -7,6 +7,9 @@
 #include <sstream>
 #include <stdexcept>
 #include <vector>
+#ifndef UART_CLOCK_HZ
+#define UART_CLOCK_HZ 27000000
+#endif
 
 class Board {
     static VerilatedContext* single(VerilatedContext& c) { c.threads(1); return &c; }
@@ -14,7 +17,7 @@ class Board {
     uint8_t host_byte=0;
     bool previous_tx=true;
 public:
-    static constexpr unsigned divisor=234,interbyte_timeout=2700000;
+    static constexpr unsigned divisor=(UART_CLOCK_HZ+57600)/115200,interbyte_timeout=UART_CLOCK_HZ/10;
     VerilatedContext context;
     Vnpu_uart_board d{single(context)};
     uint64_t cycles=0;
@@ -47,7 +50,7 @@ public:
     }
     void send_byte(uint8_t data,int delta,bool bad_stop) {
         const unsigned clocks=unsigned(int(divisor)+delta);
-        if (clocks<200 || clocks>270) throw std::runtime_error("unsupported test baud deviation");
+        if (clocks<divisor*95/100 || clocks>divisor*105/100) throw std::runtime_error("unsupported test baud deviation");
         d.uart_rxd=0; for (unsigned i=0;i<clocks;i++) tick();
         for (unsigned bit=0;bit<8;bit++) {
             d.uart_rxd=(data>>bit)&1;
@@ -59,7 +62,7 @@ public:
         received.clear();
         for (unsigned i=0;i<bytes.size();i++) send_byte(bytes[i],delta,int(i)==bad_stop);
         d.uart_rxd=1;
-        const uint64_t deadline=cycles+interbyte_timeout+40000;
+        const uint64_t deadline=cycles+interbyte_timeout+divisor*171;
         while (received.size()<12 && cycles<deadline) tick();
         if (received.empty()) return {};
         if (received.size()!=12) throw std::runtime_error("truncated FPGA reply");
@@ -69,7 +72,7 @@ public:
 int main() {
     try {
         Board b;
-        std::cout<<"READY 234 2700000\n"<<std::flush;
+        std::cout<<"READY "<<Board::divisor<<' '<<Board::interbyte_timeout<<'\n'<<std::flush;
         std::string line;
         while (std::getline(std::cin,line)) {
             std::istringstream input(line); char op; input>>op;

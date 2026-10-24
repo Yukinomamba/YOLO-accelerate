@@ -11,10 +11,13 @@ $root = [IO.Path]::GetFullPath($ProjectRoot)
 if ($root.StartsWith('\\') -or $root -match '[{}"\r\n]') { throw 'Use a native Windows path.' }
 $manifestPath = Join-Path $root 'bitstream-manifest.json'
 $manifest = Get-Content -Raw -LiteralPath $manifestPath | ConvertFrom-Json
-if ($manifest.schema -ne 'npu128-pango-bitstream-v1' -or $manifest.device -ne 'PG2L200H-6IFBB676' -or $manifest.clock_hz -ne 27000000) {
+if ($manifest.schema -ne 'npu128-pango-bitstream-v1' -or $manifest.device -ne 'PG2L200H-6IFBB676' -or $manifest.clock_hz -notin @(27000000,100000000)) {
     throw 'Unexpected diagnostic bitstream manifest.'
 }
-if ($manifest.bitstream_configuration.scbv -ne 'High Voltage' -or $manifest.bitstream_configuration.usercode -ne '12802701') {
+$expectedUsercode = '12802701'
+$expectedTop = 'npu_uart_board'
+if ($manifest.clock_hz -eq 100000000) { $expectedUsercode = '12810001'; $expectedTop = 'npu_uart_board100' }
+if ($manifest.top -ne $expectedTop -or $manifest.bitstream_configuration.scbv -ne 'High Voltage' -or $manifest.bitstream_configuration.usercode -ne $expectedUsercode) {
     throw 'Unexpected board configuration voltage or diagnostic usercode.'
 }
 function Check-Inputs {

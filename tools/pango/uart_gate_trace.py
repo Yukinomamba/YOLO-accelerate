@@ -11,8 +11,8 @@ from npu_uart import (SimulatorWire, Client, request, reply, ID, STATUS, ERRORS,
 
 
 class TraceWire(SimulatorWire):
-    def __init__(self, executable):
-        super().__init__(executable)
+    def __init__(self, executable, clock_hz=27000000):
+        super().__init__(executable, clock_hz)
         self.trace = []
 
     def exchange(self, frame, **kwargs):
@@ -25,8 +25,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--simulator', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--clock-hz', type=int, choices=[27000000, 100000000], default=27000000)
     args = parser.parse_args()
-    wire = TraceWire(args.simulator)
+    wire = TraceWire(args.simulator, args.clock_hz)
     c = Client(wire)
     try:
         c.sync(0x1357a55a); assert c.read(ID) == 0x4e505531

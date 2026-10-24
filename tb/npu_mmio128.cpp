@@ -69,7 +69,13 @@ public:
         d.req_valid=1; d.req_write=write; d.req_addr=address; d.req_wdata=value; d.req_wstrb=strobes;
         d.rsp_ready=0; eval(); require(d.req_ready && !d.rsp_valid,"unconsumed prior response");
         tick(); ++transactions; d.req_valid=0;
-        require(d.rsp_valid,"response not registered");
+        // Public pins may change after acceptance. The endpoint must execute
+        // the captured request and hold off new acceptance until completion.
+        d.req_addr=0xffff; d.req_wdata=0xbad0bad0; d.req_wstrb=15; d.req_write=!write;
+        for (unsigned wait=0;!d.rsp_valid;wait++) {
+            require(wait<8,"response latency timeout");
+            eval(); require(!d.req_ready,"accepted request while prior execution pending"); tick();
+        }
         const uint32_t data=d.rsp_rdata; const bool error=d.rsp_error;
         require(!write || data==0,"write response must be zero");
         require(!error || data==0,"failed read leaks stale data");
@@ -92,6 +98,21 @@ public:
         require(result.second==expect_error,"unexpected write response at "+std::to_string(address));
     }
     void clear_errors() { write(NPU128_ERRORS,31); require(read(NPU128_ERRORS)==0,"sticky error clear"); }
+    void stream_writes(const std::vector<std::pair<unsigned,uint32_t>>& packets) {
+        unsigned sent=0,received=0,wait=0;
+        d.rsp_ready=1;
+        while (received<packets.size()) {
+            require(++wait<packets.size()*8+20,"ordered write stream timeout");
+            d.req_valid=sent<packets.size(); d.req_write=1; d.req_wstrb=15;
+            if (d.req_valid) { d.req_addr=packets[sent].first; d.req_wdata=packets[sent].second; }
+            eval();
+            if (d.rsp_valid) { require(!d.rsp_error && d.rsp_rdata==0,"ordered stream response"); ++received; }
+            if (d.req_valid && d.req_ready) { ++sent; ++transactions; }
+            tick();
+        }
+        d.req_valid=0; d.rsp_ready=0;
+        require(sent==packets.size() && !d.rsp_valid,"extra ordered write response");
+    }
     Task make(unsigned w,unsigned h,unsigned ci,unsigned co,unsigned k,unsigned s,unsigned p) {
         Task t{w,h,ci,co,k,s,p,{},{}};
         t.image.resize(w*h*ci); t.weight.resize(co*ci*k*k);
@@ -274,14 +295,13 @@ public:
             require(!(read(NPU128_STATUS)&(NPU128_BUSY|NPU128_DONE|NPU128_OUTPUT_VALID)),"invalid command executed");
             require(read(NPU128_ERRORS)==NPU128_ERR_COMMAND,"invalid command error"); clear_errors();
         }
-        // A simultaneous W1C must not erase the newly arriving config error.
+        // A config response is delayed until the core has consumed its pulse.
+        // Its error must be visible before a later, ordered W1C clears it.
         write(NPU128_CFG_INDEX,3<<8); write(NPU128_CFG_DATA,0);
-        d.req_valid=1; d.req_write=1; d.req_addr=NPU128_CFG_COMMIT; d.req_wdata=1; d.req_wstrb=15; d.rsp_ready=1;
-        tick(); ++transactions;
-        d.req_addr=NPU128_ERRORS; d.req_wdata=NPU128_ERR_CONFIG;
-        eval(); require(d.req_ready && d.rsp_valid && !d.rsp_error,"back-to-back config response");
-        tick(); ++transactions; d.req_valid=0; tick(); d.rsp_ready=0;
-        require(read(NPU128_ERRORS)==NPU128_ERR_CONFIG,"new error lost to W1C"); clear_errors();
+        write(NPU128_CFG_COMMIT,1);
+        require(read(NPU128_ERRORS)==NPU128_ERR_CONFIG,"config error absent after commit response");
+        write(NPU128_ERRORS,NPU128_ERR_CONFIG);
+        require(read(NPU128_ERRORS)==0,"ordered config error W1C");
     }
     void prefetch_and_protection() {
         auto current=make(5,4,17,13,3,1,1),next=make(3,2,17,13,3,1,1);
@@ -313,6 +333,8 @@ public:
             require(read(NPU128_STATUS)&NPU128_OUTPUT_VALID,"abort needs pending output");
             if (hard) {
                 d.req_valid=1; d.req_write=0; d.req_addr=NPU128_OUTPUT_RAW; d.rsp_ready=0; tick(); ++transactions;
+                d.req_valid=0;
+                for (unsigned wait=0;!d.rsp_valid;wait++) { require(wait<8,"reset test response timeout"); tick(); }
                 require(d.rsp_valid,"reset test response"); hard_reset();
             } else write(NPU128_CONTROL,NPU128_RESET);
             idle(100);
@@ -325,8 +347,39 @@ public:
             ++aborts; lut();
         }
     }
+    void ordered_commands() {
+        auto old=make(1,1,8,16,1,1,0),next=make(1,1,8,16,1,1,0);
+        load(old,0,0);
+        uint64_t image=0;
+        for (unsigned lane=0;lane<8;lane++) image|=uint64_t(uint8_t(next.image[lane]))<<(8*lane);
+        std::vector<std::pair<unsigned,uint32_t>> packets{
+            {NPU128_ACT_INDEX,0},{NPU128_ACT_DATA,uint32_t(image)},
+            {NPU128_ACT_DATA+4,uint32_t(image>>32)},{NPU128_ACT_COMMIT,1},
+            {NPU128_ACT_DATA,0x7f7f7f7f},{NPU128_ACT_INDEX,24575},{NPU128_WEIGHT_INDEX,0}};
+        for (unsigned word=0;word<32;word++) {
+            uint32_t value=0;
+            for (unsigned lane=0;lane<4;lane++) value|=uint32_t(uint8_t(next.weight[word*4+lane]))<<(8*lane);
+            packets.push_back({NPU128_WEIGHT_DATA+word*4,value});
+        }
+        packets.insert(packets.end(),{{NPU128_WEIGHT_COMMIT,1},{NPU128_WEIGHT_DATA,0x7f7f7f7f},
+            {NPU128_WEIGHT_INDEX,863},{NPU128_CONTROL,NPU128_RESET}});
+        // Every next request is already presented while the preceding one is
+        // pending; RESET must retain both acknowledged memory commits.
+        stream_writes(packets);
+        next.bias.fill(0); descriptor(next,0,0);
+        stream_writes({{NPU128_CONTROL,NPU128_START},{NPU128_SHAPE,0},
+            {NPU128_OPTIONS,0},{NPU128_BIAS,0x12345678}});
+        drain(next,0);
+        // External reset cancels an accepted but unacknowledged commit. It
+        // must not write poison into RAM or leave a response/pulse behind.
+        write(NPU128_ACT_INDEX,0); write(NPU128_ACT_DATA,0x7f7f7f7f);
+        d.req_valid=1; d.req_write=1; d.req_addr=NPU128_ACT_COMMIT; d.req_wdata=1; d.req_wstrb=15;
+        eval(); require(d.req_ready,"reset cancellation request ready"); tick(); ++transactions;
+        require(!d.rsp_valid,"commit acknowledged before execution"); hard_reset();
+        descriptor(next,0,0); write(NPU128_CONTROL,NPU128_START); drain(next,0); ++aborts;
+    }
     void test() {
-        register_errors(); invalid_devices(); lut();
+        register_errors(); invalid_devices(); ordered_commands(); lut();
         for (unsigned mode=0;mode<3;mode++) {
             run(make(5,4,17,13,3,1,1),mode,mode%2);
             run(make(5,3,9,16,1,2,0),mode,1-mode%2);

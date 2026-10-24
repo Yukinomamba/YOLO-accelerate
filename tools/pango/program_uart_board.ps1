@@ -12,9 +12,13 @@ $run = [IO.Path]::GetFullPath($RunDirectory)
 if ($run.StartsWith('\\') -or $run -match '[{}"\r\n]' -or $bits -match '[{}"\r\n]') { throw 'Use safe native Windows paths.' }
 if (Test-Path -LiteralPath $run) { throw 'Preserve board records; use a fresh run directory.' }
 $proof = Get-Content -Raw -LiteralPath $Validation | ConvertFrom-Json
+$expectedUsercode = '12802701'
+$expectedTop = 'npu_uart_board'
+if ($proof.clock_hz -eq 100000000) { $expectedUsercode = '12810001'; $expectedTop = 'npu_uart_board100' }
 if ($proof.schema -ne 'npu128-uart-bitstream-assessment-v1' -or $proof.status -ne 'PASS' -or
-    $proof.device -ne 'PG2L200H-6IFBB676' -or $proof.clock_hz -ne 27000000 -or
-    $proof.actual_settings.Usercode -ne '12802701' -or $proof.actual_settings.'Set Configuration Bank Voltage(SCBV)' -ne 'High Voltage') {
+    $proof.device -ne 'PG2L200H-6IFBB676' -or $proof.clock_hz -notin @(27000000,100000000) -or
+    $proof.actual_settings.'Top Module' -ne $expectedTop -or
+    $proof.actual_settings.Usercode -ne $expectedUsercode -or $proof.actual_settings.'Set Configuration Bank Voltage(SCBV)' -ne 'High Voltage') {
     throw 'Accepted diagnostic bitstream evidence required.'
 }
 if ((Get-FileHash -Algorithm SHA256 -LiteralPath $bits).Hash.ToLowerInvariant() -ne $proof.bitstream_sha256) { throw 'Bitstream hash mismatch.' }
@@ -36,7 +40,7 @@ set verified [cfg_verify -device_index 0]
 puts "UART_DIAG_VERIFY_RETURN=$verified"
 set usercode [cfg_read_device_property -mode 2 -device_index 0]
 puts "UART_DIAG_USERCODE=$usercode"
-if {![string equal -nocase $usercode "12802701"]} {error "Diagnostic usercode mismatch"}
+if {![string equal -nocase $usercode "@USERCODE@"]} {error "Diagnostic usercode mismatch"}
 set status [cfg_read_device_property -mode 3 -device_index 0]
 puts "UART_DIAG_CONFIG_STATUS=$status"
 scan $status %x status_value
@@ -46,7 +50,7 @@ puts "UART_DIAG_JTAG_CHECKS_PASS"
 exit
 '@
 $scriptPath = Join-Path $run 'program.tcl'
-[IO.File]::WriteAllText($scriptPath, $tcl.Replace('@PORT@', [string]$ServerPort).Replace('@BITSTREAM@', $bits.Replace('\','/')))
+[IO.File]::WriteAllText($scriptPath, $tcl.Replace('@PORT@', [string]$ServerPort).Replace('@USERCODE@', $expectedUsercode).Replace('@BITSTREAM@', $bits.Replace('\','/')))
 Add-Type -Path (Join-Path $PSScriptRoot 'GuardedJob.cs')
 $exe = Join-Path $PdsHome 'bin\cdt_cfg_shell.exe'
 $command = '-work_dir "'+$run+'" -file "'+$scriptPath+'"'

@@ -1,6 +1,11 @@
 # YOLO-accelerate
 
-> 2026-10-24：当前开发分支 `fpga/npu128-uart` 已增加真实管脚顶层、UART→MMIO 桥和 Python 主机客户端。
+> 当前 `fpga/npu128-mmio-timing` 正在提升完整板级入口至真实 PLL 100 MHz：
+> 分级 MMIO 21 任务/674 向量、100 MHz 分频的完整 UART 引脚回归、厂商 PLL 锁定/复位测试、
+> 新综合网表 103 帧四态回放均通过。完整顶层 100 MHz 布线 setup +0.805 ns、hold +0.039 ns、未布通 0；
+> 新位流 JTAG 下载/回读通过，串口实测待 KEY0，见 [MMIO_TIMING128.md](docs/MMIO_TIMING128.md)。
+>
+> 2026-10-24 前一阶段 `fpga/npu128-uart` 已增加真实管脚顶层、UART→MMIO 桥和 Python 主机客户端。
 > 完整引脚 RTL 仿真、字节级 GTP 网表回放及 27 MHz 真实管脚 PDS 通过；实际 JTAG 下载/回读和 CP2102 COM11 三组卷积自检通过：12 向量、384 个 RAW/INT8 值一致，见 [BOARD128.md](docs/BOARD128.md)。
 > 计算核保持 [RAM 优化版本](docs/RAM128.md) 原样：126.5 DRM、独立 100 MHz setup/hold 通过。下文保留各阶段分支对照。
 
@@ -33,6 +38,7 @@ RISC-V 控制的静态图像目标检测加速器。电脑传入图片，软核�
 | `fpga/npu128-ramcompact` | 每个激活 bank 分为三段 8K 字，保持容量和预装载 | 100 MHz 布线 setup +0.214 ns、hold +0.037 ns、未布通 0；126.5 DRM，比预装载基线节省 32，功能与周期等价通过，见 `docs/RAM128.md` |
 | `fpga/npu128-mmio` | 控制寄存器、激活/权重暂存提交、单向量读回槽和 C11 传输接口 | 19 任务、672 向量、269,859 次公开总线事务通过；外围 PDS/上板待做，见 `docs/MMIO128.md` |
 | `fpga/npu128-uart` | 板载 27 MHz、真实 UART/KEY0 管脚、CRC 停等桥与 Python 客户端 | 引脚仿真及字节级门级回放通过；27 MHz PDS setup +20.614 ns、hold +0.039 ns、未布通 0；126.5 DRM，见 `docs/UART128.md` |
+| `fpga/npu128-mmio-timing` | MMIO 请求/提交流水及真实 27→100 MHz GPLL 板级入口 | 完整顶层 100 MHz setup +0.805 ns、hold +0.039 ns；6,946 LUT / 9,625 FF / 82 APM / 126.5 DRM；JTAG 通过，UART 待 KEY0，见 `docs/MMIO_TIMING128.md` |
 
 早期 Nano 评估、候选选型、128 MAC 初始移植和图片仿真的阶段分支已移除，相关提交仍在
 `main` 历史中。图片复现使用标签 `baseline/adam128-image-cosim-20261023`（`658b547`）。

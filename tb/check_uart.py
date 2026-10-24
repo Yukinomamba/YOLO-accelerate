@@ -14,9 +14,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--simulator', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--clock-hz', type=int, choices=[27000000, 100000000], default=27000000)
     args = parser.parse_args()
     assert crc16(b'123456789') == 0x29b1
-    wire = SimulatorWire(args.simulator)
+    wire = SimulatorWire(args.simulator, args.clock_hz)
     client = Client(wire)
     negatives = 0
     try:
@@ -50,7 +51,8 @@ def main():
             except TimeoutError:
                 negatives += 1
             assert client.read(ACT_DATA) == 0x11bb33dd
-        for delta in (-4, 4):
+        deviation = (wire.divisor*17+500)//1000
+        for delta in (-deviation, deviation):
             assert reply(wire.exchange(request(client.sequence, 0, ID), delta=delta), client.sequence)[1] == 0x4e505531
             assert client.read(ID) == 0x4e505531
         wire.command('G')
@@ -72,8 +74,8 @@ def main():
         frames, cycles = wire.frames, wire.close()
         result.update(protocol_negative_cases=negatives, client_transactions=client.transactions,
             retransmissions=client.retries_used, wire_frames=frames, simulated_clocks=cycles,
-            uart_clocks_per_bit=234, interbyte_timeout_clocks=2700000,
-            tested_receive_divisors=[230, 234, 238], external_reset_recovery=True)
+            uart_clocks_per_bit=wire.divisor, interbyte_timeout_clocks=wire.interbyte_timeout,
+            tested_receive_divisors=[wire.divisor-deviation, wire.divisor, wire.divisor+deviation], external_reset_recovery=True)
         args.output.write_text(json.dumps(result, indent=2)+'\n')
         print(f'PASS npu_uart_board: {len(result["cases"])} scalar-checked convolution tasks, '
               f'{client.transactions} host transactions, {negatives} protocol rejection/recovery cases, '

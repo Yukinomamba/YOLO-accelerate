@@ -23,7 +23,14 @@ module npu_mmio128 (
     typedef enum logic [3:0] {OP_NONE, OP_START, OP_RESET, OP_ACT, OP_WEIGHT,
         OP_CONFIG, OP_POP, OP_DONE_CLEAR, OP_ERROR_CLEAR, OP_REGISTER} operation_t;
     operation_t operation;
-    logic fire, core_rst, device_busy, running_q, active_bank_q, done_q;
+    typedef enum logic [1:0] {BUS_IDLE, BUS_EXECUTE, BUS_ISSUE} bus_state_t;
+    bus_state_t bus_state_q;
+    logic fire, execute, deferred, core_rst, device_busy, running_q, active_bank_q, done_q;
+    logic request_write_q;
+    logic [15:0] request_addr_q;
+    logic [31:0] request_data_q;
+    logic [3:0] request_strb_q;
+    logic act_commit_q, weight_commit_q, config_commit_q, start_commit_q, reset_commit_q;
     logic [31:0] shape_q, options_q, act_index_q, weight_index_q, cfg_index_q, cfg_data_q;
     logic [63:0] act_data_q;
     logic [1023:0] weight_data_q;
@@ -54,15 +61,18 @@ module npu_mmio128 (
                 new_value[byte_index*8 +: 8] : old_value[byte_index*8 +: 8];
     endfunction
 
-    assign req_ready = !rst && (!rsp_valid || rsp_ready);
+    assign req_ready = !rst && bus_state_q == BUS_IDLE && (!rsp_valid || rsp_ready);
     assign fire = req_valid && req_ready;
+    assign execute = bus_state_q == BUS_EXECUTE;
+    assign deferred = access_error == 0 && (operation == OP_ACT || operation == OP_WEIGHT ||
+        operation == OP_CONFIG || operation == OP_START || operation == OP_RESET);
     assign device_busy = running_q || core_busy;
-    assign write_mask = {{8{req_wstrb[3]}}, {8{req_wstrb[2]}},
-                         {8{req_wstrb[1]}}, {8{req_wstrb[0]}}};
-    assign effective_write = req_wdata & write_mask;
+    assign write_mask = {{8{request_strb_q[3]}}, {8{request_strb_q[2]}},
+                         {8{request_strb_q[1]}}, {8{request_strb_q[0]}}};
+    assign effective_write = request_data_q & write_mask;
     // RESET is always legal, including while active or with an unread result.
     // Its response survives; only external reset cancels the bus response.
-    assign core_rst = rst || (fire && req_write && req_addr == 16'h0008 && effective_write == 2);
+    assign core_rst = rst || reset_commit_q;
     assign error_view = errors_q | (core_cmd_error ? ERR_COMMAND : 0) |
                                   (core_cfg_error ? ERR_CONFIG : 0);
 
@@ -70,9 +80,9 @@ module npu_mmio128 (
         operation = OP_NONE;
         access_error = '0;
         read_data = '0;
-        if (req_addr[1:0] != 0) access_error = ERR_ADDRESS;
-        else if (req_write) begin
-            unique case (req_addr)
+        if (request_addr_q[1:0] != 0) access_error = ERR_ADDRESS;
+        else if (request_write_q) begin
+            unique case (request_addr_q)
                 16'h0008: begin
                     if (effective_write == 1) begin
                         operation = OP_START;
@@ -91,13 +101,13 @@ module npu_mmio128 (
                 16'h0020, 16'h0024, 16'h0028, 16'h002c, 16'h0030, 16'h0034,
                 16'h0060, 16'h0064: begin
                     operation = OP_REGISTER;
-                    if (req_addr == 16'h0024 &&
-                        (merge_bytes(options_q, req_wdata, req_wstrb) & ~32'h7ff) != 0)
+                    if (request_addr_q == 16'h0024 &&
+                        (merge_bytes(options_q, request_data_q, request_strb_q) & ~32'h7ff) != 0)
                         access_error = ERR_RANGE;
                 end
                 16'h0038, 16'h003c, 16'h0040, 16'h0044: begin
                     if (effective_write == 1) begin
-                        unique case (req_addr)
+                        unique case (request_addr_q)
                             16'h0038: begin
                                 operation = OP_ACT;
                                 if (act_index_q[30:0] >= 31'(ACT_WORDS)) access_error = ERR_RANGE;
@@ -122,13 +132,13 @@ module npu_mmio128 (
                     end else if (effective_write != 0) access_error = ERR_RANGE;
                 end
                 default: begin
-                    if ((req_addr >= 16'h0080 && req_addr < 16'h00c0) ||
-                        (req_addr >= 16'h0100 && req_addr < 16'h0180)) operation = OP_REGISTER;
+                    if ((request_addr_q >= 16'h0080 && request_addr_q < 16'h00c0) ||
+                        (request_addr_q >= 16'h0100 && request_addr_q < 16'h0180)) operation = OP_REGISTER;
                     else access_error = ERR_ADDRESS;
                 end
             endcase
         end else begin
-            unique case (req_addr)
+            unique case (request_addr_q)
                 16'h0000: read_data = 32'h4e505531; // NPU1
                 16'h0004: read_data = 32'h00010000;
                 16'h0008, 16'h0038, 16'h003c, 16'h0040, 16'h0044: read_data = '0;
@@ -156,15 +166,15 @@ module npu_mmio128 (
                 16'h0060: read_data = act_data_q[31:0];
                 16'h0064: read_data = act_data_q[63:32];
                 default: begin
-                    if (req_addr >= 16'h0080 && req_addr < 16'h00c0)
-                        read_data = bias_q[req_addr[5:2]*32 +: 32];
-                    else if (req_addr >= 16'h0100 && req_addr < 16'h0180)
-                        read_data = weight_data_q[req_addr[6:2]*32 +: 32];
-                    else if (req_addr >= 16'h0200 && req_addr < 16'h0240) begin
-                        read_data = output_raw_q[req_addr[5:2]*32 +: 32];
+                    if (request_addr_q >= 16'h0080 && request_addr_q < 16'h00c0)
+                        read_data = bias_q[request_addr_q[5:2]*32 +: 32];
+                    else if (request_addr_q >= 16'h0100 && request_addr_q < 16'h0180)
+                        read_data = weight_data_q[request_addr_q[6:2]*32 +: 32];
+                    else if (request_addr_q >= 16'h0200 && request_addr_q < 16'h0240) begin
+                        read_data = output_raw_q[request_addr_q[5:2]*32 +: 32];
                         if (!output_valid_q) access_error = ERR_STATE;
-                    end else if (req_addr >= 16'h0240 && req_addr < 16'h0250) begin
-                        read_data = output_int8_q[req_addr[3:2]*32 +: 32];
+                    end else if (request_addr_q >= 16'h0240 && request_addr_q < 16'h0250) begin
+                        read_data = output_int8_q[request_addr_q[3:2]*32 +: 32];
                         if (!output_valid_q) access_error = ERR_STATE;
                     end else access_error = ERR_ADDRESS;
                 end
@@ -172,21 +182,21 @@ module npu_mmio128 (
         end
     end
 
-    assign output_pop = fire && access_error == 0 && operation == OP_POP;
+    assign output_pop = execute && access_error == 0 && operation == OP_POP;
     assign core_out_ready = !core_rst && (!output_valid_q || output_pop);
     assign output_push = core_out_valid && core_out_ready;
 
     npu_conv128 u_npu (
         .clk, .rst(core_rst),
         .act_wr_bank(act_index_q[31]),
-        .act_wr_valid(fire && access_error == 0 && operation == OP_ACT),
+        .act_wr_valid(act_commit_q),
         .act_wr_ready(unused_act_ready), .act_wr_addr(act_index_q[14:0]), .act_wr_data(act_data_q),
-        .weight_wr_valid(fire && access_error == 0 && operation == OP_WEIGHT),
+        .weight_wr_valid(weight_commit_q),
         .weight_wr_ready(unused_weight_ready), .weight_wr_addr(weight_index_q[9:0]), .weight_wr_data(weight_data_q),
-        .cfg_valid(fire && access_error == 0 && operation == OP_CONFIG), .cfg_ready(unused_cfg_ready),
+        .cfg_valid(config_commit_q), .cfg_ready(unused_cfg_ready),
         .cfg_kind(cfg_index_q[9:8]), .cfg_addr(cfg_index_q[7:0]), .cfg_data(cfg_data_q),
         .cfg_error(core_cfg_error), .lut_ready(core_lut_ready),
-        .cmd_valid(fire && access_error == 0 && operation == OP_START), .cmd_ready(unused_cmd_ready),
+        .cmd_valid(start_commit_q), .cmd_ready(unused_cmd_ready),
         .cmd_act_bank(options_q[10]), .cmd_mode(options_q[9:8]), .cmd_width(shape_q[7:0]),
         .cmd_height(shape_q[15:8]), .cmd_cin(shape_q[31:16]), .cmd_cout(options_q[4:0]),
         .cmd_kernel3(options_q[5]), .cmd_stride2(options_q[6]), .cmd_pad(options_q[7]), .cmd_bias(bias_q),
@@ -199,15 +209,58 @@ module npu_mmio128 (
 
     always_ff @(posedge clk) begin
         if (rst) begin
+            bus_state_q <= BUS_IDLE;
+            request_write_q <= 1'b0;
+            request_addr_q <= '0;
+            request_data_q <= '0;
+            request_strb_q <= '0;
+            act_commit_q <= 1'b0;
+            weight_commit_q <= 1'b0;
+            config_commit_q <= 1'b0;
+            start_commit_q <= 1'b0;
+            reset_commit_q <= 1'b0;
             rsp_valid <= 1'b0;
             rsp_rdata <= '0;
             rsp_error <= 1'b0;
-        end else if (req_ready) begin
-            rsp_valid <= req_valid;
-            if (req_valid) begin
-                rsp_rdata <= req_write || access_error != 0 ? 0 : read_data;
-                rsp_error <= access_error != 0;
-            end
+        end else begin
+            act_commit_q <= 1'b0;
+            weight_commit_q <= 1'b0;
+            config_commit_q <= 1'b0;
+            start_commit_q <= 1'b0;
+            reset_commit_q <= 1'b0;
+            if (rsp_ready) rsp_valid <= 1'b0;
+            unique case (bus_state_q)
+                BUS_IDLE: if (fire) begin
+                    request_write_q <= req_write;
+                    request_addr_q <= req_addr;
+                    request_data_q <= req_wdata;
+                    request_strb_q <= req_wstrb;
+                    bus_state_q <= BUS_EXECUTE;
+                end
+                BUS_EXECUTE: begin
+                    rsp_rdata <= request_write_q || access_error != 0 ? 0 : read_data;
+                    rsp_error <= access_error != 0;
+                    if (deferred) begin
+                        act_commit_q <= operation == OP_ACT;
+                        weight_commit_q <= operation == OP_WEIGHT;
+                        config_commit_q <= operation == OP_CONFIG;
+                        start_commit_q <= operation == OP_START;
+                        reset_commit_q <= operation == OP_RESET;
+                        bus_state_q <= BUS_ISSUE;
+                    end else begin
+                        rsp_valid <= 1'b1;
+                        bus_state_q <= BUS_IDLE;
+                    end
+                end
+                BUS_ISSUE: begin
+                    // Core side effects commit on this edge. Staging is held
+                    // throughout EXECUTE/ISSUE; no later request can overwrite
+                    // the payload before it is consumed. Acknowledge only now.
+                    rsp_valid <= 1'b1;
+                    bus_state_q <= BUS_IDLE;
+                end
+                default: bus_state_q <= BUS_IDLE;
+            endcase
         end
     end
 
@@ -234,14 +287,14 @@ module npu_mmio128 (
             output_count_q <= '0;
         end else begin
             // New errors win over W1C, including a core error arriving that cycle.
-            errors_q <= (errors_q & ~(fire && access_error == 0 && operation == OP_ERROR_CLEAR ?
+            errors_q <= (errors_q & ~(execute && access_error == 0 && operation == OP_ERROR_CLEAR ?
                                       effective_write : 0)) |
-                        (fire ? access_error : 0) |
+                        (execute ? access_error : 0) |
                         (core_cmd_error ? ERR_COMMAND : 0) | (core_cfg_error ? ERR_CONFIG : 0);
-            if (fire && access_error == 0 && operation == OP_DONE_CLEAR && effective_write[2]) done_q <= 1'b0;
+            if (execute && access_error == 0 && operation == OP_DONE_CLEAR && effective_write[2]) done_q <= 1'b0;
             if (core_done) begin done_q <= 1'b1; running_q <= 1'b0; end
             if (core_cmd_error) running_q <= 1'b0;
-            if (fire && access_error == 0 && operation == OP_START) begin
+            if (execute && access_error == 0 && operation == OP_START) begin
                 running_q <= 1'b1;
                 active_bank_q <= options_q[10];
                 done_q <= 1'b0;
@@ -256,22 +309,22 @@ module npu_mmio128 (
                 output_flags_q <= {core_last, core_mode};
                 output_count_q <= output_count_q + 32'd1;
             end
-            if (fire && access_error == 0 && operation == OP_REGISTER) begin
-                unique case (req_addr)
-                    16'h0020: shape_q <= merge_bytes(shape_q, req_wdata, req_wstrb);
-                    16'h0024: options_q <= merge_bytes(options_q, req_wdata, req_wstrb);
-                    16'h0028: act_index_q <= merge_bytes(act_index_q, req_wdata, req_wstrb);
-                    16'h002c: weight_index_q <= merge_bytes(weight_index_q, req_wdata, req_wstrb);
-                    16'h0030: cfg_index_q <= merge_bytes(cfg_index_q, req_wdata, req_wstrb);
-                    16'h0034: cfg_data_q <= merge_bytes(cfg_data_q, req_wdata, req_wstrb);
-                    16'h0060: act_data_q[31:0] <= merge_bytes(act_data_q[31:0], req_wdata, req_wstrb);
-                    16'h0064: act_data_q[63:32] <= merge_bytes(act_data_q[63:32], req_wdata, req_wstrb);
+            if (execute && access_error == 0 && operation == OP_REGISTER) begin
+                unique case (request_addr_q)
+                    16'h0020: shape_q <= merge_bytes(shape_q, request_data_q, request_strb_q);
+                    16'h0024: options_q <= merge_bytes(options_q, request_data_q, request_strb_q);
+                    16'h0028: act_index_q <= merge_bytes(act_index_q, request_data_q, request_strb_q);
+                    16'h002c: weight_index_q <= merge_bytes(weight_index_q, request_data_q, request_strb_q);
+                    16'h0030: cfg_index_q <= merge_bytes(cfg_index_q, request_data_q, request_strb_q);
+                    16'h0034: cfg_data_q <= merge_bytes(cfg_data_q, request_data_q, request_strb_q);
+                    16'h0060: act_data_q[31:0] <= merge_bytes(act_data_q[31:0], request_data_q, request_strb_q);
+                    16'h0064: act_data_q[63:32] <= merge_bytes(act_data_q[63:32], request_data_q, request_strb_q);
                     default: begin
-                        if (req_addr >= 16'h0080 && req_addr < 16'h00c0)
-                            bias_q[req_addr[5:2]*32 +: 32] <=
-                                merge_bytes(bias_q[req_addr[5:2]*32 +: 32], req_wdata, req_wstrb);
-                        else weight_data_q[req_addr[6:2]*32 +: 32] <=
-                                merge_bytes(weight_data_q[req_addr[6:2]*32 +: 32], req_wdata, req_wstrb);
+                        if (request_addr_q >= 16'h0080 && request_addr_q < 16'h00c0)
+                            bias_q[request_addr_q[5:2]*32 +: 32] <=
+                                merge_bytes(bias_q[request_addr_q[5:2]*32 +: 32], request_data_q, request_strb_q);
+                        else weight_data_q[request_addr_q[6:2]*32 +: 32] <=
+                                merge_bytes(weight_data_q[request_addr_q[6:2]*32 +: 32], request_data_q, request_strb_q);
                     end
                 endcase
             end

@@ -24,7 +24,9 @@ def main():
         path = (p/name).resolve()
         assert path.is_relative_to(p) and digest(path) == expected, name
     physical_path = p/'bitstream-input/implementation.json'
-    assert digest(physical_path) == m['implementation_sha256'] == digest(ROOT/'reports/npu128-uart-implementation.json')
+    implementation = (ROOT/m.get('repository_implementation', 'reports/npu128-uart-implementation.json')).resolve()
+    assert implementation.is_relative_to(ROOT)
+    assert digest(physical_path) == m['implementation_sha256'] == digest(implementation)
     physical = json.loads(physical_path.read_text())
     assert physical['status'] == 'PASS' and physical['mapped_functional_run']
     for name, expected in physical['functional_validation']['source_sha256'].items():
@@ -37,16 +39,18 @@ def main():
     settings_path = directory/'report_db/generate_bit_stream_settings.db'
     settings = {row[0].text or '': row[1].text or '' for row in ET.parse(settings_path).getroot().iter('row') if len(row) == 2}
     assert settings['Set Configuration Bank Voltage(SCBV)'] == 'High Voltage'
-    assert settings['Usercode'].lower().removeprefix('0x') == '12802701'
+    assert settings['Usercode'].lower().removeprefix('0x') == m['bitstream_configuration']['usercode']
     assert settings['Disable Cyclic Redundancy Checking(CRC)'] == 'false'
     assert settings['Unused IO Status'] == 'NONE'
-    assert settings['Top Module'] == 'npu_uart_board' and settings['Part'] == 'PG2L200H-6FBB676'
+    assert settings['Top Module'] == m['top'] and settings['Part'] == 'PG2L200H-6FBB676'
     assert settings['Encrypt Bitstream'] == 'false'
-    assert m['bitstream_configuration'] == json.loads((ROOT/'config/uart-bitstream.json').read_text())
+    config_path = (ROOT/m.get('repository_config', 'config/uart-bitstream.json')).resolve()
+    assert config_path.is_relative_to(ROOT)
+    assert m['bitstream_configuration'] == json.loads(config_path.read_text())
     log = (p/'bitstream.log').read_text()
     assert not re.search(r'(?m)^[EC]:', log)
     assert not re.search(r'(?m)^Process "(?:Compile|Synthesize|Device Map|Place|Route|Route Optimize)" started\.', log)
-    bgr = (directory/'npu_uart_board.bgr').read_text()
+    bgr = (directory/f'{m["top"]}.bgr').read_text()
     assert str(p/m['routed_database']) in bgr.replace('F:/', '/mnt/f/'), 'unexpected input DB'
     bits = list(directory.glob('*.sbit'))
     assert len(bits) == 1 and bits[0].stat().st_size == guard['bitstream_bytes']
@@ -54,7 +58,7 @@ def main():
     raw = [p/'bitstream-manifest.json', p/'bitstream-guard.json', p/'bitstream-samples.jsonl',
            p/'bitstream.log', p/'uart_bitstream.pds', *directory.rglob('*')]
     report = {'schema': 'npu128-uart-bitstream-assessment-v1', 'status': 'PASS',
-        'device': m['device'], 'clock_hz': 27000000, 'project': m['project'],
+        'device': m['device'], 'top': m['top'], 'clock_hz': m['clock_hz'], 'project': m['project'],
         'source_commit': m['source_commit'], 'implementation_sha256': m['implementation_sha256'],
         'routed_database_sha256': m['routed_database_sha256'], 'immutable_sha256': m['immutable_sha256'],
         'bitstream': str(bits[0].relative_to(p)), 'bitstream_sha256': digest(bits[0]),
@@ -63,7 +67,7 @@ def main():
         'original_implementation_unchanged': True, 'hardware_programmed_by_this_flow': False,
         'raw_evidence_sha256': {str(f.relative_to(p)): digest(f) for f in sorted(set(raw)) if f.is_file()},
         'collector_sha256': digest(Path(__file__)),
-        'limitations': ['27 MHz diagnostic, not a new 100 MHz implementation.',
+        'limitations': [f'{m["clock_hz"]//1000000} MHz diagnostic; timing proof is in its exact routed implementation reference.',
             'Generation proof only; see separate board report for JTAG/serial results.']}
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2)+'\n')
