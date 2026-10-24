@@ -1,5 +1,8 @@
 # 128 MAC 时序优化（2026-10-24）
 
+> 后续独立布局布线已在原 100 MHz 约束下通过 setup/hold，见
+> [IMPLEMENTATION128.md](IMPLEMENTATION128.md)。本文件保留前一轮综合与功能验证结果。
+
 开发分支 `fpga/npu128-timing` 从 `main` 的 `08b0402` 开始。根据
 [交接文档](HANDOFF.md) 和 [旧综合证据](../reports/npu128-synthesis.json)，
 保留 8 输入通道 × 16 输出通道、INT32 回绕累加和现有量化接口。

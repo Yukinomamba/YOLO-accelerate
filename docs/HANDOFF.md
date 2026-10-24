@@ -3,6 +3,8 @@
 > 2026-10-24 接手补充：用户已要求恢复 128 MAC 时序优化与独立物理评估。
 > 新分支 `fpga/npu128-timing` 的变更、测试及新证据见 [TIMING128.md](TIMING128.md)。
 > 以下是 2026-10-23 的历史交接快照，其中“本次暂缓”描述的是当时交付范围。
+> 后续 128 MAC 独立布局布线在原 100 MHz 约束下通过 setup/hold，
+> 结果与边界见 [IMPLEMENTATION128.md](IMPLEMENTATION128.md)，尚未上板或接入 SoC。
 
 核对日期：2026-10-23。本文对应 `fpga/adam-upstream-faithful` 的实现提交
 `971037ac94fdcd619057c0df0049a9216afff3be`；后续文档提交不改变这份 RTL。

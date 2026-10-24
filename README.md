@@ -26,7 +26,7 @@ RISC-V 控制的静态图像目标检测加速器。电脑传入图片，软核�
 | `main` | 共同开发与文档入口，采用完整上游 576 路 INT8 卷积通路 | 新功能从这里创建分支，经 PR 合入 |
 | `fpga/adam-upstream-faithful` | 完整上游移植的固定对照，源码与接口说明见 `docs/UPSTREAM.md` | 保留 `948c74f`；卷积仿真通过，暂无有效 Pango 综合结果 |
 | `fpga/npu128-bringup` | 128 MAC、INT32 累加及定点量化/激活的对照实现 | 保留 `f0134a0`；已有独立综合，100 MHz 尚未收敛 |
-| `fpga/npu128-timing` | 128 MAC 地址、加法树及量化流水优化 | 综合估计 124.69 MHz，100 MHz setup WNS +1.980 ns；物理实现待验证，见 `docs/TIMING128.md` |
+| `fpga/npu128-timing` | 128 MAC 地址、加法树及量化流水优化 | 独立布局布线 100 MHz 通过：setup +0.208 ns、hold +0.036 ns、未布通 0；见 `docs/IMPLEMENTATION128.md` |
 
 早期 Nano 评估、候选选型、128 MAC 初始移植和图片仿真的阶段分支已移除，相关提交仍在
 `main` 历史中。图片复现使用标签 `baseline/adam128-image-cosim-20261023`（`658b547`）。
