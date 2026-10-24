@@ -18,6 +18,13 @@ def canonical_netlist(path):
                      if not line.lstrip().startswith(IGNORED_COMMENTS))
 
 
+def functional_report(path, netlist):
+    report = json.loads(path.read_text())
+    if report.get('status') != 'PASS' or report.get('netlist_sha256') != digest(netlist):
+        raise RuntimeError('functional PASS must match the exact implemented netlist')
+    return report
+
+
 def command_text(text):
     return ' '.join(text.replace('{', '').replace('}', '').split())
 
@@ -52,6 +59,8 @@ def main():
     parser.add_argument('--project', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--rejected-project', type=Path, action='append', default=[])
+    parser.add_argument('--netlist-validation', type=Path,
+                        help='fresh mapped-functional PASS, required for changed-RTL physical flows')
     args = parser.parse_args()
     project = args.project.resolve()
     manifest = json.loads((project/'manifest.json').read_text())
@@ -67,13 +76,17 @@ def main():
         if digest(ROOT/name) != manifest['files'][name]:
             raise RuntimeError(f'current RTL differs from physically implemented input: {name}')
     prior = json.loads((project/'input/synthesis-manifest.json').read_text())
-    checked = json.loads((project/'input/netlist-validation.json').read_text())
     baseline = project/'input/reference_syn.vm'
     regenerated = project/'prj_tasks/syn_1/synthesize/npu_measure_top_syn.vm'
-    if checked['status'] != 'PASS' or digest(baseline) != checked['netlist_sha256']:
-        raise RuntimeError('reference netlist lacks the expected functional PASS')
+    reference_checked = functional_report(project/'input/netlist-validation.json', baseline)
+    checked = reference_checked
     original_text, new_text = canonical_netlist(baseline), canonical_netlist(regenerated)
-    if original_text != new_text:
+    deferred = manifest.get('deferred_gate_validation', False)
+    if deferred:
+        if not args.netlist_validation:
+            parser.error('fresh --netlist-validation is required for this changed-RTL flow')
+        checked = functional_report(args.netlist_validation, regenerated)
+    elif original_text != new_text:
         raise RuntimeError('regenerated synthesis differs beyond permitted metadata comments')
     if digest(project/'measurement.fdc') != prior['files']['measurement.fdc']:
         raise RuntimeError('clock or IO constraints changed from the synthesis baseline')
@@ -133,7 +146,7 @@ def main():
     files = [project/n for n in ('manifest.json', 'guard.json', 'guard-samples.jsonl',
                                  'implementation.log', 'npu128_impl.pds')]
     files += [regenerated, *pnr.rglob('*.adf'), *pnr.rglob('*.log'), *pnr.rglob('report_db/*.db')]
-    internal = [r for r in setup_paths if 'u_npu/' in (r['Start Point']+' '+r['End Point'])]
+    internal = [r for r in setup_paths if 'u_npu/' in r['Start Point'] and 'u_npu/' in r['End Point']]
     report = {
         'schema': 'npu128-routed-assessment-v1', 'date': guard['before']['timestamp'][:10],
         'status': 'PASS' if closed else 'TIMING_OR_COVERAGE_FAIL',
@@ -143,9 +156,12 @@ def main():
         'tool_version': re.search(r'version ([^)]+)', log).group(1),
         'clock_period_ns': manifest['clock_period_ns'], 'source_sha256': manifest['files'],
         'netlist_comparison': {'status': 'PASS', 'ignored_comment_prefixes': IGNORED_COMMENTS,
+            'method': 'fresh mapped-functional verification' if deferred else 'canonical comparison to checked baseline',
+            'identical_to_reference': original_text == new_text,
             'baseline_sha256': digest(baseline), 'regenerated_sha256': digest(regenerated),
             'canonical_sha256': hashlib.sha256(new_text.encode()).hexdigest(),
-            'reference_functional_result': checked['test_result']},
+            'reference_functional_result': reference_checked['test_result']},
+        'functional_validation': checked,
         'constraints': {'byte_identical_to_baseline': True, 'sha256': digest(project/'measurement.fdc'),
                         'imported_commands': imported, 'clock_signals': table(map_db/'device_map_clock_signal.db')},
         'routed_fmax': fmax, 'routed_setup': setup, 'routed_hold': hold,

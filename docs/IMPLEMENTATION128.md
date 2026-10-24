@@ -1,5 +1,7 @@
 # 128 MAC 独立布局布线（2026-10-24）
 
+后续连续像素调度改动及新的物理验证见 [THROUGHPUT128.md](THROUGHPUT128.md)；本页保留原物理基线。
+
 在 `fpga/npu128-timing` 的 `7b9e894` 基础上验证物理实现，计算 RTL 不变。
 本轮只针对 `npu_measure_top` 测量壳内的 NPU，不连接板卡、不下载，也不生成位流。
 上一轮综合与数值验证见 [TIMING128.md](TIMING128.md)。

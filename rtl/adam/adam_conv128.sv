@@ -47,7 +47,7 @@ module adam_conv128 #(
 );
     timeunit 1ns;
     timeprecision 1ps;
-    typedef enum logic [2:0] {IDLE, PREPARE, ISSUE, DRAIN, OUTPUT} state_t;
+    typedef enum logic {IDLE, ACTIVE} state_t;
     state_t state_q;
     logic cmd_fire, out_fire, descriptor_ok;
     logic [7:0] width_q, height_q, out_width_q, out_height_q;
@@ -61,11 +61,16 @@ module adam_conv128 #(
     logic [1:0] tap_x_q, tap_y_q;
     logic [511:0] bias_q;
     logic [31:0] accumulator_q [16];
+    logic [511:0] accumulation_sum, result0_q, result1_q;
+    logic read_ptr_q, write_ptr_q;
+    logic [1:0] result_count_q, reserved_q;
+    logic [7:0] issue_x_q, issue_y_q;
+    logic issued_all_q, issue_fire, issue_first, result_push;
     logic [ACT_AW-1:0] act_rd_addr;
     logic [WEIGHT_AW-1:0] weight_rd_addr;
     logic [63:0] act_rd_data, mac_activation;
     logic [1023:0] weight_rd_data, mac_weight;
-    logic read_valid_q, read_last_q, read_padding_q;
+    logic read_valid_q, read_first_q, read_last_q, read_padding_q;
     logic [7:0] read_mask_q;
     logic issue_last;
     logic signed [10:0] coord_x_q, coord_y_q;
@@ -73,7 +78,8 @@ module adam_conv128 #(
     logic [ACT_AW-1:0] base_q;
     logic [GROUP_W-1:0] group_q0, group_q1, group_q2, group_q3;
     logic padding_q1, padding_q2, padding_q3, padding_q4;
-    logic [ADDR_STAGES-1:0] addr_valid_q, addr_last_q;
+    logic [ADDR_STAGES-1:0] addr_valid_q, addr_first_q, addr_last_q;
+    logic [6:0] mac_first_q;
     logic [7:0] addr_mask_q [ADDR_STAGES];
     logic [WEIGHT_AW-1:0] weight_issue_q, weight_addr_q [ADDR_STAGES];
     logic mac_valid, mac_last;
@@ -87,9 +93,17 @@ module adam_conv128 #(
     assign weight_wr_ready = !rst && !busy && int'({1'b0, weight_wr_addr}) < WEIGHT_DEPTH;
     assign cmd_ready = !rst && !busy && !act_wr_valid && !weight_wr_valid;
     assign cmd_fire = cmd_valid && cmd_ready;
-    assign out_valid = !rst && state_q == OUTPUT;
+    assign out_valid = !rst && state_q == ACTIVE && result_count_q != 0;
     assign out_fire = out_valid && out_ready;
+    assign out_data = read_ptr_q ? result1_q : result0_q;
     assign out_last = out_x == out_width_q - 1'b1 && out_y == out_height_q - 1'b1;
+    // A credit is reserved before the first beat and released only on delivery.
+    // It accounts for both in-flight pixels and completed FIFO entries, so no
+    // downstream stall can overflow the two-entry result buffer.
+    assign issue_first = group_q == 0 && tap_x_q == 0 && tap_y_q == 0;
+    assign issue_fire = !rst && state_q == ACTIVE && !issued_all_q &&
+                        (!issue_first || reserved_q < 2 || out_fire);
+    assign result_push = !rst && mac_valid && mac_last;
 
     always_comb begin
         proposed_width = int'({1'b0, cmd_width}) + 2*int'({1'b0, cmd_pad}) - (cmd_kernel3 ? 3 : 1);
@@ -111,8 +125,8 @@ module adam_conv128 #(
     // Tags and the sequential weight address travel through the same five edges.
     // Padding may wrap intermediate arithmetic, but never enables an activation read.
     always_ff @(posedge clk) begin
-        coord_x_q <= (11'({1'b0, out_x}) << stride2_q) + 11'({1'b0, tap_x_q}) - 11'({1'b0, pad_q});
-        coord_y_q <= (11'({1'b0, out_y}) << stride2_q) + 11'({1'b0, tap_y_q}) - 11'({1'b0, pad_q});
+        coord_x_q <= (11'({1'b0, issue_x_q}) << stride2_q) + 11'({1'b0, tap_x_q}) - 11'({1'b0, pad_q});
+        coord_y_q <= (11'({1'b0, issue_y_q}) << stride2_q) + 11'({1'b0, tap_y_q}) - 11'({1'b0, pad_q});
         row_q <= PIXEL_W'(coord_y_q) * PIXEL_W'({1'b0, width_q});
         x_q1 <= PIXEL_W'(coord_x_q);
         padding_q1 <= coord_x_q < 0 || coord_x_q >= $signed({3'b0, width_q}) ||
@@ -135,17 +149,19 @@ module adam_conv128 #(
     always_ff @(posedge clk) begin
         if (rst) begin
             addr_valid_q <= '0;
+            addr_first_q <= '0;
             addr_last_q <= '0;
             for (int stage = 0; stage < ADDR_STAGES; stage++) addr_mask_q[stage] <= '0;
             weight_issue_q <= '0;
         end else begin
-            addr_valid_q <= {addr_valid_q[ADDR_STAGES-2:0], state_q == ISSUE};
-            addr_last_q <= {addr_last_q[ADDR_STAGES-2:0], state_q == ISSUE && issue_last};
+            addr_valid_q <= {addr_valid_q[ADDR_STAGES-2:0], issue_fire};
+            addr_first_q <= {addr_first_q[ADDR_STAGES-2:0], issue_fire && issue_first};
+            addr_last_q <= {addr_last_q[ADDR_STAGES-2:0], issue_fire && issue_last};
             for (int lane = 0; lane < 8; lane++)
                 addr_mask_q[0][lane] <= int'({1'b0, group_q})*8 + lane < int'({1'b0, cin_q});
             for (int stage = 1; stage < ADDR_STAGES; stage++) addr_mask_q[stage] <= addr_mask_q[stage-1];
-            if (state_q == PREPARE) weight_issue_q <= '0;
-            else if (state_q == ISSUE) weight_issue_q <= weight_issue_q + 1'b1;
+            if (state_q == IDLE || (issue_fire && issue_last)) weight_issue_q <= '0;
+            else if (issue_fire) weight_issue_q <= weight_issue_q + 1'b1;
         end
     end
 
@@ -162,11 +178,13 @@ module adam_conv128 #(
     always_ff @(posedge clk) begin
         if (rst) begin
             read_valid_q <= 1'b0;
+            read_first_q <= 1'b0;
             read_last_q <= 1'b0;
             read_padding_q <= 1'b0;
             read_mask_q <= '0;
         end else begin
             read_valid_q <= addr_valid_q[ADDR_STAGES-1];
+            read_first_q <= addr_first_q[ADDR_STAGES-1];
             read_last_q <= addr_last_q[ADDR_STAGES-1];
             read_padding_q <= padding_q4;
             read_mask_q <= addr_mask_q[ADDR_STAGES-1];
@@ -191,19 +209,48 @@ module adam_conv128 #(
         .out_valid(mac_valid), .out_last(mac_last), .out_dot(mac_dot)
     );
 
-    // 每个像素独立初始化 bias；所有输入组与 kernel tap 都在 INT32 域累加。
+    // Pixels remain ordered in the MAC pipeline. First/last tags delimit each
+    // accumulator lifetime; initializing from bias on the first result needs
+    // only one INT32 adder, including the single-beat first+last case.
+    always_comb begin
+        for (int oc = 0; oc < 16; oc++) begin
+            if (mac_first_q[6])
+                accumulation_sum[oc*32 +: 32] =
+                    (oc < int'({1'b0, cout_q}) ? bias_q[oc*32 +: 32] : 32'b0) + mac_dot[oc*32 +: 32];
+            else accumulation_sum[oc*32 +: 32] = accumulator_q[oc] + mac_dot[oc*32 +: 32];
+        end
+    end
+    always_ff @(posedge clk) begin
+        if (rst) mac_first_q <= '0;
+        else mac_first_q <= {mac_first_q[5:0], read_valid_q && read_first_q};
+        if (!rst && mac_valid) begin
+            for (int oc = 0; oc < 16; oc++) accumulator_q[oc] <= accumulation_sum[oc*32 +: 32];
+            if (mac_last) begin
+                if (write_ptr_q) result1_q <= accumulation_sum;
+                else result0_q <= accumulation_sum;
+            end
+        end
+    end
+
     always_ff @(posedge clk) begin
         if (rst) begin
-            out_data <= '0;
-            for (int oc = 0; oc < 16; oc++) accumulator_q[oc] <= '0;
-        end else if (state_q == PREPARE) begin
-            for (int oc = 0; oc < 16; oc++)
-                accumulator_q[oc] <= oc < int'({1'b0, cout_q}) ? bias_q[oc*32 +: 32] : 32'b0;
-        end else if (mac_valid) begin
-            for (int oc = 0; oc < 16; oc++) begin
-                accumulator_q[oc] <= accumulator_q[oc] + mac_dot[oc*32 +: 32];
-                if (mac_last) out_data[oc*32 +: 32] <= accumulator_q[oc] + mac_dot[oc*32 +: 32];
-            end
+            read_ptr_q <= 1'b0;
+            write_ptr_q <= 1'b0;
+            result_count_q <= '0;
+            reserved_q <= '0;
+        end else begin
+            if (result_push) write_ptr_q <= ~write_ptr_q;
+            if (out_fire) read_ptr_q <= ~read_ptr_q;
+            case ({result_push, out_fire})
+                2'b10: result_count_q <= result_count_q + 1'b1;
+                2'b01: result_count_q <= result_count_q - 1'b1;
+                default: begin end
+            endcase
+            case ({issue_fire && issue_first, out_fire})
+                2'b10: reserved_q <= reserved_q + 1'b1;
+                2'b01: reserved_q <= reserved_q - 1'b1;
+                default: begin end
+            endcase
         end
     end
 
@@ -228,6 +275,9 @@ module adam_conv128 #(
             out_height_q <= '0;
             out_x <= '0;
             out_y <= '0;
+            issue_x_q <= '0;
+            issue_y_q <= '0;
+            issued_all_q <= 1'b0;
             out_mask <= '0;
             perf_mac_steps <= '0;
             perf_active_cycles <= '0;
@@ -254,37 +304,42 @@ module adam_conv128 #(
                             out_height_q <= 8'((proposed_height >> int'({1'b0, cmd_stride2})) + 1);
                             out_x <= '0;
                             out_y <= '0;
+                            issue_x_q <= '0;
+                            issue_y_q <= '0;
+                            issued_all_q <= 1'b0;
+                            group_q <= '0;
+                            tap_x_q <= '0;
+                            tap_y_q <= '0;
                             for (int oc = 0; oc < 16; oc++) out_mask[oc] <= oc < int'({1'b0, cmd_cout});
                             perf_mac_steps <= '0;
                             perf_active_cycles <= '0;
-                            state_q <= PREPARE;
+                            state_q <= ACTIVE;
                         end
                     end
                 end
-                PREPARE: begin
-                    group_q <= '0;
-                    tap_x_q <= '0;
-                    tap_y_q <= '0;
-                    state_q <= ISSUE;
-                end
-                ISSUE: begin
-                    perf_mac_steps <= perf_mac_steps + 1'b1;
-                    if (issue_last) begin
-                        state_q <= DRAIN;
-                    end else if (group_q == groups_q - 1'b1) begin
-                        group_q <= '0;
-                        if (tap_x_q == (kernel3_q ? 2'd2 : 2'd0)) begin
+                ACTIVE: begin
+                    if (issue_fire) begin
+                        perf_mac_steps <= perf_mac_steps + 1'b1;
+                        if (issue_last) begin
+                            group_q <= '0;
                             tap_x_q <= '0;
-                            tap_y_q <= tap_y_q + 1'b1;
+                            tap_y_q <= '0;
+                            if (issue_x_q == out_width_q - 1'b1 && issue_y_q == out_height_q - 1'b1)
+                                issued_all_q <= 1'b1;
+                            else if (issue_x_q == out_width_q - 1'b1) begin
+                                issue_x_q <= '0;
+                                issue_y_q <= issue_y_q + 1'b1;
+                            end else issue_x_q <= issue_x_q + 1'b1;
+                        end else if (group_q == groups_q - 1'b1) begin
+                            group_q <= '0;
+                            if (tap_x_q == (kernel3_q ? 2'd2 : 2'd0)) begin
+                                tap_x_q <= '0;
+                                tap_y_q <= tap_y_q + 1'b1;
+                            end else tap_x_q <= tap_x_q + 1'b1;
                         end else begin
-                            tap_x_q <= tap_x_q + 1'b1;
+                            group_q <= group_q + 1'b1;
                         end
-                    end else begin
-                        group_q <= group_q + 1'b1;
                     end
-                end
-                DRAIN: if (mac_valid && mac_last) state_q <= OUTPUT;
-                OUTPUT: begin
                     if (out_fire) begin
                         if (out_last) begin
                             done <= 1'b1;
@@ -296,7 +351,6 @@ module adam_conv128 #(
                             end else begin
                                 out_x <= out_x + 1'b1;
                             end
-                            state_q <= PREPARE;
                         end
                     end
                 end

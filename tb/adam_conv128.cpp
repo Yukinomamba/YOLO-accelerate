@@ -1,5 +1,6 @@
 #include "Vadam_conv128.h"
 #include "verilated.h"
+#include "../software/adam128_cycle_model.h"
 #include <array>
 #include <cstdint>
 #include <iostream>
@@ -113,7 +114,8 @@ public:
         }
         return result;
     }
-    void finish(const Case& t, const std::vector<uint32_t>* full_image_reference=nullptr) {
+    void finish(const Case& t, const std::vector<uint32_t>* full_image_reference=nullptr, bool stalls=true) {
+        const uint64_t begin_cycles=cycles;
         const auto golden=full_image_reference ? *full_image_reference : reference(t);
         unsigned pixel=0, held_cycles=0, stall_cycles=0;
         std::array<uint32_t,16> held{};
@@ -125,8 +127,8 @@ public:
             // Busy-time writes/commands deliberately carry conflicting values.
             d.act_wr_valid=1; d.weight_wr_valid=1; d.cmd_valid=1;
             d.act_wr_data=0; d.cmd_width=0;
-            d.out_ready=(random()%4)!=0;
-            if (d.out_valid && pixel==0 && held_cycles<11) { d.out_ready=0; ++held_cycles; }
+            d.out_ready=!stalls || (random()%4)!=0;
+            if (stalls && d.out_valid && pixel==0 && held_cycles<128) { d.out_ready=0; ++held_cycles; }
             eval();
             require(d.busy && !d.cmd_ready && !d.act_wr_ready && !d.weight_wr_ready,
                     "busy accepted a writer or command");
@@ -161,13 +163,15 @@ public:
         clear_inputs(); eval();
         require(saw_done && pixel==count && !d.busy, "completion/timeout");
         require(d.perf_mac_steps==count*t.groups()*t.k*t.k, "incorrect issued MAC beat count");
-        // PREPARE + five address stages + RAM + seven MAC stages + delivery.
-        require(d.perf_active_cycles==count*(t.groups()*t.k*t.k+15)+stall_cycles,
-                "unexpected pipeline/handshake cycle count");
+        require(d.perf_active_cycles==cycles-begin_cycles,"active cycle counter mismatch");
+        require(d.perf_active_cycles>=count*t.groups()*t.k*t.k+14,"pipeline shorter than data dependencies");
+        if (!stalls) require(d.perf_active_cycles==adam128_no_stall_cycles(count,t.groups()*t.k*t.k),
+                            "two-credit service-time recurrence mismatch");
+        else require(stall_cycles>=128,"long output stall not exercised");
         for (int i=0;i<9;++i) { tick(); require(!d.done && !d.out_valid, "stale completion/result"); }
         ++convolutions;
     }
-    void run(const Case& t) { load(t); start(t); finish(t); }
+    void run(const Case& t, bool stalls=true) { load(t); start(t); finish(t,nullptr,stalls); }
     void tiled_image(int kernel, int stride) {
         // Cross both the 16x16 input-tile and 16-output-channel boundaries.
         // Golden outputs come from the untiled full image, not local tile convolution.
@@ -243,6 +247,8 @@ int main(int argc, char** argv) {
         Bench b;
         b.context.commandArgs(argc,argv);
         b.invalid_commands();
+        for (int ci : {1,9,17,41,89,97,105,192,768})
+            b.run(b.make_case(16,16,ci,16,1,1,0),false);
         for (int k : {1,3}) for (int stride : {1,2}) for (int ci : {1,3,7,8,9,17,24})
             b.run(b.make_case(5,4,ci,(ci%2)?13:16,k,stride,k==3?1:0));
         b.run(b.make_case(1,1,1,1,3,1,1));

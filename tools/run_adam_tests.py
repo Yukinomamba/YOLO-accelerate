@@ -46,7 +46,8 @@ def main():
         if args.only != 'all' and args.only != name:
             continue
         out = build/name
-        for source in [*sources, cpp, 'tools/run_guarded.py', 'tools/run_adam_tests.py']:
+        dependencies = ['software/adam128_cycle_model.h'] if name == 'conv' else []
+        for source in [*sources, cpp, *dependencies, 'tools/run_guarded.py', 'tools/run_adam_tests.py']:
             summary['source_sha256'][source] = hashlib.sha256((root/source).read_bytes()).hexdigest()
         command = [args.verilator, '--cc', '--exe', '--build', '-Wall', '-j', '1', '--threads', '1',
                    '--output-split', '5000', '--output-split-cfuncs', '100',

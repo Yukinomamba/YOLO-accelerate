@@ -17,6 +17,8 @@ def main():
     parser.add_argument('--netlist-validation', type=Path,
                         default=ROOT/'reports/npu128-timing-netlist-validation.json',
                         help='mapped-functional PASS JSON for this exact synthesis netlist')
+    parser.add_argument('--rtl-validation', type=Path,
+                        help='current RTL regression summary; requires fresh gate verification before acceptance')
     parser.add_argument('--name', required=True)
     args = parser.parse_args()
     source = args.synthesis_project.resolve()
@@ -27,9 +29,14 @@ def main():
     for name, expected in prior['files'].items():
         if sha256(source/name) != expected:
             parser.error(f'synthesis input changed: {name}')
+    regression = json.loads(args.rtl_validation.read_text()) if args.rtl_validation else None
+    if regression and (not regression['results'] or
+                       not all(row['result'].startswith('PASS ') for row in regression['results'])):
+        parser.error('all RTL regression cases must pass')
     for name in prior['rtl']:
-        if sha256(ROOT/name) != prior['files'][name]:
-            parser.error(f'current RTL differs from synthesis: {name}')
+        expected = regression['source_sha256'].get(name) if regression else prior['files'][name]
+        if sha256(ROOT/name) != expected:
+            parser.error(f'current RTL differs from validated input: {name}')
     netlist = source/'prj_tasks/syn_1/synthesize/npu_measure_top_syn.vm'
     checked = json.loads(args.netlist_validation.read_text())
     if checked['status'] != 'PASS' or checked['netlist_sha256'] != sha256(netlist):
@@ -62,6 +69,8 @@ def main():
     copy(source/'manifest.json', 'input/synthesis-manifest.json')
     copy(source/'guard.json', 'input/synthesis-guard.json')
     copy(args.netlist_validation, 'input/netlist-validation.json')
+    if args.rtl_validation:
+        copy(args.rtl_validation, 'input/rtl-validation.json')
     for name in [*prior['rtl'], 'tools/pango/stage_implementation.py',
                  'tools/pango/run_synthesis.ps1', 'tools/pango/GuardedJob.cs']:
         copy(ROOT/name, name)
@@ -88,6 +97,7 @@ def main():
         'project': f'$PDS_WORK_ROOT/work/{args.name}', 'rtl': prior['rtl'], 'files': files,
         'scope': 'standalone scan harness with automatic diagnostic IO placement; no board pinout, CPU, DDR or PLL',
         'flow': 'same ADS synthesis commands followed by physical implementation',
+        'deferred_gate_validation': bool(args.rtl_validation),
         'constraints_unchanged': True, 'hold_fix_enabled': True, 'bitstream_requested': False,
     }
     (target/'manifest.json').write_text(json.dumps(manifest, indent=2)+'\n')

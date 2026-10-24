@@ -1,5 +1,7 @@
 # 128 MAC 时序优化（2026-10-24）
 
+> 连续像素调度及更新后的周期契约见 [THROUGHPUT128.md](THROUGHPUT128.md)。本页保留流水化阶段的记录。
+
 > 后续独立布局布线已在原 100 MHz 约束下通过 setup/hold，见
 > [IMPLEMENTATION128.md](IMPLEMENTATION128.md)。本文件保留前一轮综合与功能验证结果。
 

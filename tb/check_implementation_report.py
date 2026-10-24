@@ -1,14 +1,31 @@
 """Protect evidence collection from stale zero counts or ignored logic changes."""
 from pathlib import Path
+import hashlib
+import json
 import sys
 import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]/'tools/pango'))
-from collect_implementation import canonical_netlist, final_unrouted_count
+from collect_implementation import canonical_netlist, final_unrouted_count, functional_report
 
 
 class EvidenceTests(unittest.TestCase):
+    def test_changed_netlist_requires_its_own_functional_pass(self):
+        with tempfile.TemporaryDirectory() as directory:
+            netlist, receipt = [Path(directory)/name for name in ('netlist.vm', 'gate.json')]
+            netlist.write_text('module x; assign q = 1; endmodule\n')
+            report = {'status': 'PASS', 'netlist_sha256': hashlib.sha256(netlist.read_bytes()).hexdigest()}
+            receipt.write_text(json.dumps(report))
+            self.assertEqual(functional_report(receipt, netlist), report)
+            netlist.write_text('module x; assign q = 0; endmodule\n')
+            with self.assertRaises(RuntimeError):
+                functional_report(receipt, netlist)
+            report.update(status='FAIL', netlist_sha256=hashlib.sha256(netlist.read_bytes()).hexdigest())
+            receipt.write_text(json.dumps(report))
+            with self.assertRaises(RuntimeError):
+                functional_report(receipt, netlist)
+
     def test_latest_count_wins_across_formats(self):
         text = 'Unrouted nets: 0\nUnrouted nets at iteration 38 (0.220 sec): 3\n'
         self.assertEqual(final_unrouted_count(text)[0], 3)

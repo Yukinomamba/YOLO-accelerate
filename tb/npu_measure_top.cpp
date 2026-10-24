@@ -147,6 +147,44 @@ public:
         }
         req.weight_valid=false;
         for (unsigned mode=0;mode<3;++mode) execute(16,mode,27);
+        // Four distinct pixels held at each output: fill the result credits,
+        // pause the producer, then resume with one-cycle ready pulses.
+        req.k3=0; req.s2=0; req.pad=0; req.co=16;
+        auto point_weight=[](int oc,int ic) { return int8_t((oc*5+ic)%15-7); };
+        req.weight_valid=true;
+        for (int group=0;group<3;++group) {
+            req.weight_addr=group; req.weight.fill(0);
+            for (int oc=0;oc<16;++oc) for (int lane=0;lane<8;++lane) {
+                int ic=group*8+lane,byte=oc*8+lane;
+                uint8_t w=ic<17 ? uint8_t(point_weight(oc,ic)) : 0xa7;
+                req.weight[byte/4]|=uint32_t(w)<<(8*(byte%4));
+            }
+            send(req);
+        }
+        req.weight_valid=false;
+        for (int oc=0;oc<16;++oc) req.bias[oc]=uint32_t(oc*5-17);
+        for (unsigned mode=0;mode<3;++mode) {
+            req.mode=mode; req.cmd_valid=true; send(req); req.cmd_valid=false;
+            for (unsigned pixel=0;pixel<4;++pixel) {
+                for (int i=0;i<80;++i) tick();
+                auto output=capture(); size_t cursor=9;
+                auto get=[&](unsigned width) { uint64_t v=0; for(unsigned i=0;i<width;++i) v=(v<<1)|output[cursor++]; return v; };
+                require(output[7] && !output[8] && get(1)==1 && get(2)==mode,"multi-pixel status");
+                std::array<int32_t,16> expected{};
+                for (int oc=0;oc<16;++oc) {
+                    expected[oc]=int32_t(req.bias[oc]);
+                    for (int ic=0;ic<17;++ic) expected[oc]+=int(activation(pixel,ic))*int(point_weight(oc,ic));
+                }
+                for (int oc=15;oc>=0;--oc) require(uint32_t(get(32))==uint32_t(expected[oc]),"multi-pixel bias/dot");
+                for (int oc=15;oc>=0;--oc) {
+                    uint8_t q=uint8_t(requant_reference(expected[oc],19,5));
+                    require(get(8)==(mode==0 ? 0 : mode==2 ? table[q] : q),"multi-pixel quantization");
+                }
+                require(get(16)==0xffff && get(8)==pixel%2 && get(8)==pixel/2 && get(1)==(pixel==3),"multi-pixel order");
+                req.ready=true; send(req); req.ready=false;
+            }
+            auto completed=capture(); require(completed[8] && !completed[7] && !completed[9],"multi-pixel completion");
+        }
         req.cmd_valid=true; req.mode=3; send(req);
         const auto invalid=capture(); require(invalid[6] && !invalid[7],"scan invalid command status");
     }
@@ -156,6 +194,6 @@ int main() {
     try {
         Bench b; b.test();
         std::cout<<"PASS npu_measure_top: "<<b.transactions
-                 <<" scan transactions, 1714 input/813 output bits, all 16 channel counts, three modes, 3x3/stride2/pad1/Ci17 and invalid command\n";
+                 <<" scan transactions, 1714 input/813 output bits, all 16 channel counts, three modes, 3x3/stride2/pad1/Ci17, four-pixel credit stalls and invalid command\n";
     } catch (const std::exception& e) { std::cerr<<"FAIL "<<e.what()<<'\n'; return 1; }
 }

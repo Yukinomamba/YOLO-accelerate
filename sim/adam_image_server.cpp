@@ -2,6 +2,7 @@
 // Verilator transport for full feature maps. Only adam_conv128 computes outputs.
 #include "Vadam_conv128.h"
 #include "verilated.h"
+#include "../software/adam128_cycle_model.h"
 #include <algorithm>
 #include <array>
 #include <cstdint>
@@ -138,7 +139,7 @@ class Simulator {
             tick();
         }
         require(d.done && !d.busy && pixel == pixels, "tile completion/timeout");
-        require(d.perf_mac_steps == steps && d.perf_active_cycles == steps+15*pixels,
+        require(d.perf_mac_steps == steps && d.perf_active_cycles == adam128_no_stall_cycles(pixels,t.groups()*t.k*t.k),
                 "RTL performance counter mismatch");
         stats.mac_steps += d.perf_mac_steps;
         stats.active_cycles += d.perf_active_cycles;
