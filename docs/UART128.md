@@ -2,7 +2,8 @@
 
 2026-10-24，分支 `fpga/npu128-uart`，父提交 `a906380`。已增加实际板卡引脚顶层、
 UART→MMIO 桥和电脑端 Python 客户端。计算核和 MMIO 的七个 RTL 文件与父提交逐字节一致。
-本入口用于单 tile 卷积通路的板级诊断，尚未生成 bitstream、连接串口或下载 FPGA。
+本入口用于单 tile 卷积通路的板级诊断。后续已生成位流、完成真实 JTAG 临时下载和回读；
+CP2102 尚未枚举，串口数值自检待做，最新记录见 [BOARD128.md](BOARD128.md)。
 
 顶层直接使用板载 **27 MHz**，无 PLL，整个 UART/MMIO/NPU 使用同一时钟。
 原 [RAM 优化计算核](RAM128.md) 的独立 **100 MHz** 时序基线仍然保留；
@@ -187,5 +188,6 @@ python3 tools/pango/stage_uart.py --work-root /mnt/f/pango-project \
 `tools/pango/collect_uart_implementation.py` 同时核对 RTL、mapped PASS、真实管脚和 STA。
 所有重复尝试使用新目录，保留原始工程及 guard 日志。
 
-下一步是核对实际板卡修订版和供电/下载连接，生成该顶层 bitstream，再执行串口识别和小卷积自检。
+后续位流、实际 JTAG 下载和串口待测状态见 [BOARD128.md](BOARD128.md)。
+`config/uart-board.json` 中的位流/上板字段保留原 RTL/PDS 输入快照，最新状态以新位流和上板报告为准。
 DDR、DMA、RISC-V/RT-Thread 接入、完整 YOLOX 静态量化和整图调度仍是后续工作。

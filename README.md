@@ -1,7 +1,7 @@
 # YOLO-accelerate
 
 > 2026-10-24：当前开发分支 `fpga/npu128-uart` 已增加真实管脚顶层、UART→MMIO 桥和 Python 主机客户端。
-> 完整引脚 RTL 仿真、字节级 GTP 网表回放及 27 MHz 真实管脚 PDS 通过；接口、复现及上板条件见 [UART128.md](docs/UART128.md)。尚未生成 bitstream 或上板。
+> 完整引脚 RTL 仿真、字节级 GTP 网表回放及 27 MHz 真实管脚 PDS 通过；实际 JTAG 临时下载和回读已通过，CP2102 未枚举、串口数值待测，见 [BOARD128.md](docs/BOARD128.md)。
 > 计算核保持 [RAM 优化版本](docs/RAM128.md) 原样：126.5 DRM、独立 100 MHz setup/hold 通过。下文保留各阶段分支对照。
 
 RISC-V 控制的静态图像目标检测加速器。电脑传入图片，软核调度 FPGA 卷积计算，

@@ -1,10 +1,14 @@
 # YOLO 加速器开发交接
 
+> 实际板卡接续见 [BOARD128.md](BOARD128.md)：27 MHz 诊断位流已生成，PG2L200H 的 JTAG 临时下载、
+> 回读、usercode `12802701`、DONE/错误状态通过；KEY0 用户已按。未写 Flash/eFuse。
+> CP2102 尚未枚举，用户暂不能更换 UART 线，因此串口 ID/ABI 与卷积数值验收仍待完成。
+
 > 最新分支 `fpga/npu128-uart` 的真实管脚顶层、UART→MMIO 桥及 Python 客户端见 [UART128.md](UART128.md)。
 > 27 MHz 原生时钟下，2,777 次事务和三组卷积完整引脚仿真、103 帧字节级 GTP 网表回放通过。
 > 真实管脚 PDS setup +20.614 ns、hold +0.039 ns、未布通 0；完整顶层 6,917 LUT / 9,555 FF / 82 APM / 126.5 DRM。
 > 新顶层估算 Fmax 60.8902 MHz，MMIO 装载控制路径需后续流水优化，不能视为包含外围的 100 MHz 验收。
-> 计算核/MMIO 未修改；原独立 100 MHz 基线保留。尚未生成 bitstream、连接串口或上板，未改 hgb。
+> 计算核/MMIO 未修改；原独立 100 MHz 基线保留。UART128.md 保留该阶段实现与仿真边界，未改 hgb。
 
 > 最新分支 `fpga/npu128-mmio` 已完成控制/数据窗口、C11 接口和公开总线端到端仿真，见 [MMIO128.md](MMIO128.md)。
 > 19 个任务、672 个输出向量、269,859 次总线事务通过；新外围尚未做 PDS、总线/串口桥或上板，未改 hgb。
