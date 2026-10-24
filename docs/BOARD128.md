@@ -1,5 +1,9 @@
 # 27 MHz UART 诊断上板记录
 
+> 后续 `fpga/npu128-mmio-timing` 已完成真实 GPLL 100 MHz 整顶层布局布线、JTAG 下载/回读及
+> COM11 三组卷积实测，最新结果见 [MMIO_TIMING128.md](MMIO_TIMING128.md)。
+> 下文保留原 27 MHz 版本的板卡、驱动与实测记录。
+
 2026-10-24，分支 `fpga/npu128-uart`，本轮从 `71a5d99` 接续。
 **实际 JTAG 配置/回读及 CP2102 串口卷积自检均已通过。**
 本轮没有修改 RTL、引脚或时钟约束，原 27 MHz 布线证据继续有效。

@@ -1,10 +1,12 @@
 # YOLO 加速器开发交接
 
-> 当前 `fpga/npu128-mmio-timing` 正在把完整板级入口提升至真实 PLL 100 MHz，见
+> 当前 `fpga/npu128-mmio-timing` 已把完整板级入口提升至真实 PLL 100 MHz，见
 > [MMIO_TIMING128.md](MMIO_TIMING128.md)。分级 MMIO 的 21 任务/674 向量回归、
 > 厂商 PLL 整顶层锁定/复位及 200 周期测试、100 MHz 完整 UART 引脚回归和新网表四态回放均通过；
 > 完整顶层 100 MHz 布线 setup +0.805 ns、hold +0.039 ns、未布通 0；6,946 LUT / 9,625 FF / 82 APM / 126.5 DRM。
-> 新位流 usercode `12810001` 的临时 JTAG 下载/回读及 DONE 通过；等待本次 KEY0 后运行 COM11 三组卷积实测。
+> 新位流 usercode `12810001` 的临时 JTAG 下载/回读及 DONE 通过；本次 KEY0 用户已按。
+> COM11 三组卷积实测通过：12 向量、384 个 RAW/INT8 值一致，2,759 次事务、零重传；
+> `reports/npu128-uart100-hardware-validation.json` 保存数值、源码与位流绑定及原始日志哈希。
 > 原 27 MHz 实板 PASS 作为历史基线保留。
 
 > 实际板卡接续见 [BOARD128.md](BOARD128.md)：27 MHz 诊断位流已生成，PG2L200H 的 JTAG 临时下载、

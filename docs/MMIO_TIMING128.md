@@ -5,8 +5,8 @@
 真实 100 MHz。六个计算及后处理 RTL 文件保持 RAM 压缩基线的字节内容。
 
 27 MHz 的历史实板 PASS 见 [BOARD128.md](BOARD128.md)。它不证明本次新 RTL 或
-100 MHz 位流已通过。本阶段物理实现已通过，新位流已临时下载且 JTAG 回读通过；
-目前等待用户按 KEY0 后执行实际 UART 卷积。物理与实板结果分别验收。
+100 MHz 位流已通过。本阶段物理实现、新位流临时下载/JTAG 回读以及实际 UART 三组卷积
+均已通过，物理与实板结果分别保存独立证据。
 
 ## MMIO 分级
 
@@ -86,14 +86,32 @@ SCBV=High Voltage（3.3 V），usercode=`12810001`，9,188,552 字节，SHA-256�
 
 实际 JTAG 单器件 ID=`00603899`、5 MHz 临时配置、回读均通过，
 usercode=`12810001`、配置状态=`001ffca0`，DONE=1、错误掩码 `1800001f` 下为零。
-板卡记录在 `npu128-uart100-board-20261024a`；KEY0 后的串口数值验收待完成。
+板卡记录在 `npu128-uart100-board-20261024a`；用户随后确认已按 KEY0，供电和 USB-UART 保持正常。
 [JTAG 报告](../reports/npu128-uart100-board.json) 的状态为 `JTAG_PASS_UART_PENDING`，
-该快照尚未收到本次 KEY0 确认；上一轮 27 MHz 的按键确认不能替代本次操作。
+该快照产生于本次 KEY0 确认之前，作为历史记录保留；当前串口结果见下一节。
 本任务 JTAG Server 已关闭，后续仅运行 UART 自检不需要重新启动它。
 
-实板串口仍须单独保存数值证据。
 仅有 PLL 周期测试不等于物理时序收敛；FDC 必须保留真实 27 MHz 输入及 100 MHz 生成时钟，
 不能把物理晶振直接声明为 100 MHz。
+
+## 100 MHz 实板串口验收
+
+[真实 UART 报告](../reports/npu128-uart100-hardware-validation.json) 为 **PASS**。
+使用已枚举且驱动正常的 CP2102 COM11（VID:PID=`10c4:ea60`），115200 baud、8N1，
+没有使用仿真器。先读 ID=`4e505531`、ABI=`00010000`，再运行 RAW、逐通道量化及 LUT
+三组独立标量对照卷积：12 个输出向量、192 个 RAW 和 192 个 INT8 通道槽全部一致。
+2,759 次事务、零重传；MAC 发射计数分别为 4、72、72，与 RTL 参考一致。
+
+实际耗时 80.891 秒，包括串口、USB、主机和输出逐寄存器读回开销，不能当作核心计算延迟，
+也不能据此宣称整图推理加速比。100 MHz 是本次 PLL/STA 配置；本测试未使用外部频率测量仪。
+范围仍为三个合成 tile，尚非完整 YOLOX 模型准确率或 SoC/DDR/DMA 验收。
+
+报告绑定本次 RTL、JTAG、位流与主机源码 SHA-256；原始 JSON 和 UTF-8 日志保留在
+`F:\pango-project\work\npu128-uart100-board-20261024a\hardware-functional.{json,log}`。
+仓库 JSON 统一为 UTF-8 LF，原 JSON 数值逐项保持一致，并增加原始文件/日志哈希和本次用户 KEY0 确认。
+没有修改历史 27 MHz 实板报告和本次较早的 `JTAG_PASS_UART_PENDING` 快照。
+
+后续优先测量批量数据传输与端到端吞吐，再接入图片/完整图调度；当前逐向量串口读回会造成核心等待。
 
 ## 复现
 
