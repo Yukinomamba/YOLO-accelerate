@@ -1,7 +1,7 @@
 # YOLO-accelerate
 
-> 2026-10-24：当前开发分支 `fpga/npu128-mmio` 已增加控制寄存器、数据暂存窗口和 C11 传输接口，公开总线端到端仿真通过。
-> 接口及后续上板条件见 [MMIO128.md](docs/MMIO128.md)；新外围尚未进行 PDS/上板。
+> 2026-10-24：当前开发分支 `fpga/npu128-uart` 已增加真实管脚顶层、UART→MMIO 桥和 Python 主机客户端。
+> 完整引脚 RTL 仿真、字节级 GTP 网表回放及 27 MHz 真实管脚 PDS 通过；接口、复现及上板条件见 [UART128.md](docs/UART128.md)。尚未生成 bitstream 或上板。
 > 计算核保持 [RAM 优化版本](docs/RAM128.md) 原样：126.5 DRM、独立 100 MHz setup/hold 通过。下文保留各阶段分支对照。
 
 RISC-V 控制的静态图像目标检测加速器。电脑传入图片，软核调度 FPGA 卷积计算，
@@ -32,6 +32,7 @@ RISC-V 控制的静态图像目标检测加速器。电脑传入图片，软核�
 | `fpga/npu128-prefetch` | 双 bank 激活缓存，装载与计算重叠，图片服务已使用 | 100 MHz 布线通过：setup +0.193 ns、hold +0.037 ns；总周期进一步减少 18.31%，RAM 158.5 DRM36K；见 `docs/PREFETCH128.md` |
 | `fpga/npu128-ramcompact` | 每个激活 bank 分为三段 8K 字，保持容量和预装载 | 100 MHz 布线 setup +0.214 ns、hold +0.037 ns、未布通 0；126.5 DRM，比预装载基线节省 32，功能与周期等价通过，见 `docs/RAM128.md` |
 | `fpga/npu128-mmio` | 控制寄存器、激活/权重暂存提交、单向量读回槽和 C11 传输接口 | 19 任务、672 向量、269,859 次公开总线事务通过；外围 PDS/上板待做，见 `docs/MMIO128.md` |
+| `fpga/npu128-uart` | 板载 27 MHz、真实 UART/KEY0 管脚、CRC 停等桥与 Python 客户端 | 引脚仿真及字节级门级回放通过；27 MHz PDS setup +20.614 ns、hold +0.039 ns、未布通 0；126.5 DRM，见 `docs/UART128.md` |
 
 早期 Nano 评估、候选选型、128 MAC 初始移植和图片仿真的阶段分支已移除，相关提交仍在
 `main` 历史中。图片复现使用标签 `baseline/adam128-image-cosim-20261023`（`658b547`）。

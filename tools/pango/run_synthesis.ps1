@@ -10,15 +10,16 @@ $ErrorActionPreference = 'Stop'
 $root = [IO.Path]::GetFullPath($ProjectRoot)
 if ($root.StartsWith('\\') -or $root -match '[{}"\r\n]') { throw 'Use a native Windows project path.' }
 $manifest = Get-Content -Raw -LiteralPath (Join-Path $root 'manifest.json') | ConvertFrom-Json
-if ($manifest.schema -notin @('npu128-pango-synthesis-v1', 'adam-upstream-pango-v1', 'npu128-pango-implementation-v1')) { throw 'Unexpected manifest.' }
+if ($manifest.schema -notin @('npu128-pango-synthesis-v1', 'adam-upstream-pango-v1', 'npu128-pango-implementation-v1', 'npu128-pango-uart-implementation-v1')) { throw 'Unexpected manifest.' }
 $projectName = 'npu128_post'
 if ($manifest.schema -eq 'adam-upstream-pango-v1') { $projectName = 'adam_upstream' }
 $flowName = 'synthesis'
 $scriptName = 'synthesize.tcl'
 $logName = 'synthesis.log'
 $actions = @('synthesize')
-if ($manifest.schema -eq 'npu128-pango-implementation-v1') {
+if ($manifest.schema -in @('npu128-pango-implementation-v1', 'npu128-pango-uart-implementation-v1')) {
     $projectName = 'npu128_impl'
+    if ($manifest.schema -eq 'npu128-pango-uart-implementation-v1') { $projectName = 'npu128_uart' }
     $flowName = 'implementation'
     $scriptName = 'implement.tcl'
     $logName = 'implementation.log'

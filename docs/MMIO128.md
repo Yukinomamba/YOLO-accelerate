@@ -1,5 +1,8 @@
 # 128 MAC 最小寄存器设备（2026-10-24）
 
+> 后续 `fpga/npu128-uart` 已增加 UART 停等桥、真实管脚顶层和 Python 客户端，
+> 见 [UART128.md](UART128.md)。下文保留 MMIO 阶段的验收范围。
+
 分支 `fpga/npu128-mmio` 基于已收敛的 `b103850`，新增
 `rtl/npu/npu_mmio128.sv`，将 `npu_conv128` 包装成可装载、启动、读回的独立设备。
 六个计算/后处理 RTL 文件逐字节保持原样；参考 [RAM128.md](RAM128.md)。
