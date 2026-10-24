@@ -51,7 +51,11 @@ module adam_conv128 #(
     state_t state_q;
     logic cmd_fire, out_fire, descriptor_ok;
     logic [7:0] width_q, height_q, out_width_q, out_height_q;
-    logic [15:0] cin_q, groups_q, group_q;
+    localparam int GROUP_W = (GROUPS < 2) ? 1 : $clog2(GROUPS + 1);
+    localparam int PIXEL_W = (MAX_SIDE < 2) ? 1 : $clog2(MAX_SIDE * MAX_SIDE);
+    localparam int ADDR_STAGES = 5;
+    logic [15:0] cin_q;
+    logic [GROUP_W-1:0] groups_q, group_q;
     logic [4:0] cout_q;
     logic kernel3_q, stride2_q, pad_q;
     logic [1:0] tap_x_q, tap_y_q;
@@ -63,10 +67,18 @@ module adam_conv128 #(
     logic [1023:0] weight_rd_data, mac_weight;
     logic read_valid_q, read_last_q, read_padding_q;
     logic [7:0] read_mask_q;
-    logic issue_last, inside_image;
+    logic issue_last;
+    logic signed [10:0] coord_x_q, coord_y_q;
+    logic [PIXEL_W-1:0] row_q, x_q1, pixel_q;
+    logic [ACT_AW-1:0] base_q;
+    logic [GROUP_W-1:0] group_q0, group_q1, group_q2, group_q3;
+    logic padding_q1, padding_q2, padding_q3, padding_q4;
+    logic [ADDR_STAGES-1:0] addr_valid_q, addr_last_q;
+    logic [7:0] addr_mask_q [ADDR_STAGES];
+    logic [WEIGHT_AW-1:0] weight_issue_q, weight_addr_q [ADDR_STAGES];
     logic mac_valid, mac_last;
     logic [511:0] mac_dot;
-    int input_x, input_y, kernel_size, proposed_width, proposed_height;
+    int proposed_width, proposed_height;
 
     assign busy = state_q != IDLE;
     // 装载优先于命令。忙时禁止改写缓存，复位期间禁止任何握手。
@@ -89,27 +101,61 @@ module adam_conv128 #(
                         (cmd_kernel3 || !cmd_pad) && proposed_width >= 0 && proposed_height >= 0;
     end
 
-    always_comb begin
-        kernel_size = kernel3_q ? 3 : 1;
-        input_x = int'({1'b0, out_x}) * (stride2_q ? 2 : 1) + int'({1'b0, tap_x_q}) - int'({1'b0, pad_q});
-        input_y = int'({1'b0, out_y}) * (stride2_q ? 2 : 1) + int'({1'b0, tap_y_q}) - int'({1'b0, pad_q});
-        inside_image = input_x >= 0 && input_x < int'({1'b0, width_q}) &&
-                       input_y >= 0 && input_y < int'({1'b0, height_q});
-        act_rd_addr = '0;
-        if (inside_image)
-            act_rd_addr = ACT_AW'((input_y*int'({1'b0, width_q})+input_x)*int'({1'b0, groups_q})+int'({1'b0, group_q}));
-        weight_rd_addr = WEIGHT_AW'((int'({1'b0, tap_y_q})*kernel_size+int'({1'b0, tap_x_q}))*int'({1'b0, groups_q})+int'({1'b0, group_q}));
-        issue_last = group_q == groups_q - 1'b1 &&
-                     int'({1'b0, tap_x_q}) == kernel_size-1 && int'({1'b0, tap_y_q}) == kernel_size-1;
+    assign issue_last = group_q == groups_q - 1'b1 &&
+                        tap_x_q == (kernel3_q ? 2'd2 : 2'd0) &&
+                        tap_y_q == (kernel3_q ? 2'd2 : 2'd0);
+    assign weight_rd_addr = weight_addr_q[ADDR_STAGES-1];
+
+    // One address per cycle, with no cascaded coordinate/address multipliers:
+    // coordinate -> row multiply -> pixel add -> group multiply -> group add.
+    // Tags and the sequential weight address travel through the same five edges.
+    // Padding may wrap intermediate arithmetic, but never enables an activation read.
+    always_ff @(posedge clk) begin
+        coord_x_q <= (11'({1'b0, out_x}) << stride2_q) + 11'({1'b0, tap_x_q}) - 11'({1'b0, pad_q});
+        coord_y_q <= (11'({1'b0, out_y}) << stride2_q) + 11'({1'b0, tap_y_q}) - 11'({1'b0, pad_q});
+        row_q <= PIXEL_W'(coord_y_q) * PIXEL_W'({1'b0, width_q});
+        x_q1 <= PIXEL_W'(coord_x_q);
+        padding_q1 <= coord_x_q < 0 || coord_x_q >= $signed({3'b0, width_q}) ||
+                      coord_y_q < 0 || coord_y_q >= $signed({3'b0, height_q});
+        pixel_q <= row_q + x_q1;
+        padding_q2 <= padding_q1;
+        base_q <= ACT_AW'(pixel_q) * ACT_AW'({1'b0, groups_q});
+        padding_q3 <= padding_q2;
+        act_rd_addr <= base_q + ACT_AW'({1'b0, group_q3});
+        padding_q4 <= padding_q3;
+        group_q0 <= group_q;
+        group_q1 <= group_q0;
+        group_q2 <= group_q1;
+        group_q3 <= group_q2;
+        weight_addr_q[0] <= weight_issue_q;
+        for (int stage = 1; stage < ADDR_STAGES; stage++)
+            weight_addr_q[stage] <= weight_addr_q[stage-1];
+    end
+
+    always_ff @(posedge clk) begin
+        if (rst) begin
+            addr_valid_q <= '0;
+            addr_last_q <= '0;
+            for (int stage = 0; stage < ADDR_STAGES; stage++) addr_mask_q[stage] <= '0;
+            weight_issue_q <= '0;
+        end else begin
+            addr_valid_q <= {addr_valid_q[ADDR_STAGES-2:0], state_q == ISSUE};
+            addr_last_q <= {addr_last_q[ADDR_STAGES-2:0], state_q == ISSUE && issue_last};
+            for (int lane = 0; lane < 8; lane++)
+                addr_mask_q[0][lane] <= int'({1'b0, group_q})*8 + lane < int'({1'b0, cin_q});
+            for (int stage = 1; stage < ADDR_STAGES; stage++) addr_mask_q[stage] <= addr_mask_q[stage-1];
+            if (state_q == PREPARE) weight_issue_q <= '0;
+            else if (state_q == ISSUE) weight_issue_q <= weight_issue_q + 1'b1;
+        end
     end
 
     adam_sdp_ram #(.WIDTH(64), .DEPTH(ACT_DEPTH), .ADDR_W(ACT_AW)) u_activation_ram (
         .clk, .wr_en(act_wr_valid && act_wr_ready), .wr_addr(act_wr_addr), .wr_data(act_wr_data),
-        .rd_en(!rst && state_q == ISSUE && inside_image), .rd_addr(act_rd_addr), .rd_data(act_rd_data)
+        .rd_en(!rst && addr_valid_q[ADDR_STAGES-1] && !padding_q4), .rd_addr(act_rd_addr), .rd_data(act_rd_data)
     );
     adam_sdp_ram #(.WIDTH(1024), .DEPTH(WEIGHT_DEPTH), .ADDR_W(WEIGHT_AW)) u_weight_ram (
         .clk, .wr_en(weight_wr_valid && weight_wr_ready), .wr_addr(weight_wr_addr), .wr_data(weight_wr_data),
-        .rd_en(!rst && state_q == ISSUE), .rd_addr(weight_rd_addr), .rd_data(weight_rd_data)
+        .rd_en(!rst && addr_valid_q[ADDR_STAGES-1]), .rd_addr(weight_rd_addr), .rd_data(weight_rd_data)
     );
 
     // SRAM 一拍读延迟的标签；padding 不读输入 RAM，直接向 MAC 送真实的零。
@@ -120,11 +166,10 @@ module adam_conv128 #(
             read_padding_q <= 1'b0;
             read_mask_q <= '0;
         end else begin
-            read_valid_q <= state_q == ISSUE;
-            read_last_q <= state_q == ISSUE && issue_last;
-            read_padding_q <= !inside_image;
-            for (int lane = 0; lane < 8; lane++)
-                read_mask_q[lane] <= int'({1'b0, group_q})*8 + lane < int'({1'b0, cin_q});
+            read_valid_q <= addr_valid_q[ADDR_STAGES-1];
+            read_last_q <= addr_last_q[ADDR_STAGES-1];
+            read_padding_q <= padding_q4;
+            read_mask_q <= addr_mask_q[ADDR_STAGES-1];
         end
     end
 
@@ -200,7 +245,7 @@ module adam_conv128 #(
                             height_q <= cmd_height;
                             cin_q <= cmd_cin;
                             cout_q <= cmd_cout;
-                            groups_q <= (cmd_cin + 16'd7) >> 3;
+                            groups_q <= GROUP_W'((cmd_cin + 16'd7) >> 3);
                             kernel3_q <= cmd_kernel3;
                             stride2_q <= cmd_stride2;
                             pad_q <= cmd_pad;
@@ -228,7 +273,7 @@ module adam_conv128 #(
                         state_q <= DRAIN;
                     end else if (group_q == groups_q - 1'b1) begin
                         group_q <= '0;
-                        if (int'({1'b0, tap_x_q}) == kernel_size-1) begin
+                        if (tap_x_q == (kernel3_q ? 2'd2 : 2'd0)) begin
                             tap_x_q <= '0;
                             tap_y_q <= tap_y_q + 1'b1;
                         end else begin

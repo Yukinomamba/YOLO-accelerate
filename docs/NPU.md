@@ -1,5 +1,8 @@
 # NPU 定点后处理与独立 PDS 工程
 
+> 2026-10-24：本文件保留 `fpga/npu128-bringup` 的历史结果。
+> `fpga/npu128-timing` 的流水修改与新结果见 [128 MAC 时序优化](TIMING128.md)。
+
 当前分支 `fpga/npu128-bringup` 在 128 MAC 卷积后端增加逐通道重新量化和可编程激活表。
 图片联合仿真的 baseline 固定在 `baseline/adam128-image-cosim-20261023`，对应 `658b547`。
 图遍历、分块、搬运安排、层间依赖、框解码与 NMS 继续由 CPU 软件负责。

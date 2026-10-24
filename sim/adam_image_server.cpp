@@ -118,7 +118,7 @@ class Simulator {
         d.cmd_valid = 0;
         require(d.busy && !d.cmd_error, "valid tile rejected");
         const unsigned pixels = ow*oh, steps = pixels*t.groups()*t.k*t.k;
-        const uint64_t deadline = cycles + steps + 10*pixels + 16;
+        const uint64_t deadline = cycles + steps + 17*pixels + 16;
         unsigned pixel = 0;
         while (!d.done && cycles < deadline) {
             eval();
@@ -138,7 +138,7 @@ class Simulator {
             tick();
         }
         require(d.done && !d.busy && pixel == pixels, "tile completion/timeout");
-        require(d.perf_mac_steps == steps && d.perf_active_cycles == steps+8*pixels,
+        require(d.perf_mac_steps == steps && d.perf_active_cycles == steps+15*pixels,
                 "RTL performance counter mismatch");
         stats.mac_steps += d.perf_mac_steps;
         stats.active_cycles += d.perf_active_cycles;

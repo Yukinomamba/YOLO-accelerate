@@ -161,7 +161,8 @@ public:
         clear_inputs(); eval();
         require(saw_done && pixel==count && !d.busy, "completion/timeout");
         require(d.perf_mac_steps==count*t.groups()*t.k*t.k, "incorrect issued MAC beat count");
-        require(d.perf_active_cycles==count*(t.groups()*t.k*t.k+8)+stall_cycles,
+        // PREPARE + five address stages + RAM + seven MAC stages + delivery.
+        require(d.perf_active_cycles==count*(t.groups()*t.k*t.k+15)+stall_cycles,
                 "unexpected pipeline/handshake cycle count");
         for (int i=0;i<9;++i) { tick(); require(!d.done && !d.out_valid, "stale completion/result"); }
         ++convolutions;
@@ -222,11 +223,11 @@ public:
     void aborts() {
         const auto t=make_case(5,4,17,13,3,1,1);
         load(t);
-        for (unsigned delay : {0u,1u,2u,5u,12u,30u,80u}) {
+        for (unsigned delay : {0u,1u,2u,3u,4u,5u,6u,7u,8u,9u,10u,11u,12u,13u,14u,15u,30u,80u}) {
             start(t);
             for (unsigned n=0;n<delay;++n) tick();
             reset();
-            for (int n=0;n<12;++n) { tick(); require(!d.out_valid && !d.done && !d.busy,"old transaction survived reset"); }
+            for (int n=0;n<20;++n) { tick(); require(!d.out_valid && !d.done && !d.busy,"old transaction survived reset"); }
             // RAM contents intentionally survive reset; a new command must recover.
             start(t); finish(t);
         }
@@ -254,7 +255,7 @@ int main(int argc, char** argv) {
         for (int k : {1,3}) for (int stride : {1,2}) b.tiled_image(k,stride);
         b.aborts();
         std::cout << "PASS adam_conv128: " << b.convolutions << " convolutions, " << b.outputs
-                  << " output pixels, 4 stitched full-image cases, 9 invalid descriptors, 8 abort/recovery cases; cycles="
+                  << " output pixels, 4 stitched full-image cases, 9 invalid descriptors, 19 abort/recovery cases; cycles="
                   << b.cycles << "; MACs=128; seed=0x20261023\n";
         b.d.final();
     } catch (const std::exception& error) {

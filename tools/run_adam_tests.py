@@ -11,7 +11,7 @@ import sys
 def main():
     p = argparse.ArgumentParser()
     p.add_argument('--verilator', default='verilator')
-    p.add_argument('--only', choices=['all', 'primitives', 'conv'], default='all')
+    p.add_argument('--only', choices=['all', 'primitives', 'mac', 'conv'], default='all')
     p.add_argument('--build-dir', type=Path, default=Path('build/adam128'))
     args = p.parse_args()
     root = Path(__file__).resolve().parents[1]
@@ -27,6 +27,7 @@ def main():
     cases = [('primitives', 'tb_adam_primitives',
               ['tb/adam_upstream.vlt', 'tb/tb_adam_primitives.sv', *upstream, *rtl[:2]],
               'tb/adam_primitives.cpp', 'PASS adam primitives:'),
+             ('mac', 'adam_mac128', [rtl[0], rtl[2]], 'tb/adam_mac128.cpp', 'PASS adam_mac128:'),
              ('conv', 'adam_conv128', rtl, 'tb/adam_conv128.cpp', 'PASS adam_conv128:')]
     summary = {'branch': subprocess.check_output(['git', 'branch', '--show-current'], cwd=root, text=True).strip(),
                'source_base_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip(),
