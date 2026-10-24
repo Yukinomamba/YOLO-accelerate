@@ -259,6 +259,9 @@ int main(int argc, char** argv) {
         b.run(b.make_case(16,16,24,16,3,2,1));
         b.run(b.make_case(16,16,768,16,3,1,1));
         b.run(b.make_case(16,16,768,16,3,1,1),true,1); // bank 1, all 24,576 words and highest read address
+        // Cross both 8K segment boundaries with partially occupied input groups.
+        for (unsigned bank : {0u,1u}) for (int ci : {257,513})
+            b.run(b.make_case(16,16,ci,3,1,1,0),true,bank);
         for (int ci : {48,96,192,384,768}) b.run(b.make_case(3,3,ci,16,3,1,1));
         for (int pattern : {1,2,3,4}) b.run(b.make_case(3,3,768,16,3,1,1,pattern));
         for (int k : {1,3}) for (int stride : {1,2}) b.tiled_image(k,stride);

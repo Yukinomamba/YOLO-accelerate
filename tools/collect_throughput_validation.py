@@ -19,14 +19,23 @@ def main():
     parser.add_argument('--implementation', type=Path, required=True)
     parser.add_argument('--profile', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--netlist-validation', type=Path,
+                        help='mapped-functional report for this implementation; defaults to build-dir/netlist/summary.json')
+    parser.add_argument('--reference-implementation', type=Path,
+                        help='physical reference for a RAM compaction with unchanged cycle behavior')
+    parser.add_argument('--reference-profile', type=Path,
+                        help='matching prefetch profile whose counters must stay identical')
     args = parser.parse_args()
+    if bool(args.reference_implementation) != bool(args.reference_profile):
+        parser.error('pass both reference implementation and reference profile')
     if args.output.exists():
         parser.error('use a fresh output path')
     build = args.build_dir
+    mapped_path = args.netlist_validation or build/'netlist/summary.json'
     def read(path):
         return json.loads(path.read_text())
     adam, npu, image_manifest, image, mapped = map(read, [build/'adam/summary-all.json',
-        build/'npu/summary.json', build/'image/manifest.json', build/'image-test.json', build/'netlist/summary.json'])
+        build/'npu/summary.json', build/'image/manifest.json', build/'image-test.json', mapped_path])
     physical, profile = map(read, [args.implementation, args.profile])
     prefetch = profile['schema'] == 'npu128-prefetch-profile-v1'
     hashes = {}
@@ -70,7 +79,7 @@ def main():
                  'tb/check_implementation_report.py', 'tools/collect_throughput_validation.py']:
         hashes[name] = digest(ROOT/name)
     evidence = [build/'adam/summary-all.json', build/'npu/summary.json', build/'image/manifest.json',
-                build/'image-test.json', build/'image-test.metrics.json', build/'netlist/summary.json',
+                build/'image-test.json', build/'image-test.metrics.json', mapped_path,
                 args.implementation, args.profile]
     if prefetch:
         evidence += [build/'profile/summary.json', build/'profile/workloads.txt', build/'profile/run.log']
@@ -126,6 +135,37 @@ def main():
         report['engineering_budget'] = {'status': 'PASS', 'drm36k_ceiling': budget['npu_drm36k_ceiling'],
             'lut_ceiling': budget['npu_lut6_ceiling'], 'apm_ceiling': budget['npu_apm_ceiling'],
             'scope': 'repository NPU planning ceilings; not current integrated SoC free-resource measurements'}
+    if args.reference_implementation:
+        assert prefetch
+        reference, old_profile = map(read, [args.reference_implementation, args.reference_profile])
+        assert reference['status'] == old_profile['status'] == 'PASS'
+        assert physical['constraints']['sha256'] == reference['constraints']['sha256']
+        assert physical['device'] == reference['device'] and physical['clock_period_ns'] == reference['clock_period_ns'] == 10
+        assert profile['frequency_mhz'] == old_profile['frequency_mhz'] == 100
+        assert profile['fixture_sha256'] == old_profile['fixture_sha256']
+        assert profile['workloads_sha256'] == old_profile['workloads_sha256']
+        assert len(profile['comparisons']) == len(old_profile['comparisons']) == 6
+        for new, old in zip(profile['comparisons'], old_profile['comparisons']):
+            for key in ('size', 'mode', 'serial', 'prefetch'):
+                assert new[key] == old[key], (new['size'], new['mode'], key)
+        before = reference['resources']['u_npu(npu_conv128)']
+        after = physical['resources']['u_npu(npu_conv128)']
+        assert after['DRM'] < before['DRM'] and after['APM'] == before['APM']
+        segments = physical['activation_ram_instances']
+        assert len(segments) == 6 and all(float(r['DRM']) == 16 for r in segments)
+        mappings = physical['activation_memory_mapping']
+        assert len(mappings) == 6 and all(r['count'] == 16 and r['write_configuration'] == r['read_configuration'] == '8 K x 4'
+                                         and r['primitive'] == 'GTP_DRM36K_E1' for r in mappings)
+        report['schema'] = 'npu128-ramcompact-validation-v1'
+        report['ram_comparison'] = {'status': 'PASS', 'before': before, 'after': after,
+            'delta': {key: after[key]-before[key] for key in before},
+            'activation_ram_instances': segments,
+            'activation_memory_mapping': mappings,
+            'cycle_equivalence': 'all serial/prefetch counters in all six Tiny input/mode scenarios exactly match the reference',
+            'constraints_unchanged': True}
+        report['activation_buffers'].update(segments_per_bank=3, segment_words=8192)
+        for path in (args.reference_implementation, args.reference_profile):
+            report['evidence_sha256'][str(path)] = digest(path)
     args.output.write_text(json.dumps(report, indent=2)+'\n')
     print('PASS current-source RTL/image/mapped/profile/routed evidence; upstream byte integrity intact')
 

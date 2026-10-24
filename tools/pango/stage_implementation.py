@@ -20,7 +20,13 @@ def main():
     parser.add_argument('--rtl-validation', type=Path,
                         help='current RTL regression summary; requires fresh gate verification before acceptance')
     parser.add_argument('--name', required=True)
+    parser.add_argument('--routing-recovery', action='store_true',
+                        help='enable documented recovery timing analysis during routing')
+    parser.add_argument('--max-hold-paths', type=int,
+                        help='hold repair path-count limit when routing recovery is enabled')
     args = parser.parse_args()
+    if args.max_hold_paths is not None and (not args.routing_recovery or args.max_hold_paths < 1):
+        parser.error('--max-hold-paths requires --routing-recovery and a positive count')
     source = args.synthesis_project.resolve()
     prior = json.loads((source/'manifest.json').read_text())
     guard = json.loads((source/'guard.json').read_text())
@@ -76,12 +82,18 @@ def main():
         copy(ROOT/name, name)
     # ADS associates FDC with its synthesis flow. A bare VM backend rejects FDC
     # (Flow-0150), so retain the exact successful ADS commands and constraints.
+    route = 'route -number_of_router_thread 1 -check_clk_net_route_by_srb TRUE'
+    hold = 'route_optimize -fix_hold_violation_in_route TRUE'
+    if args.routing_recovery:
+        route += ' -optimize_routing_recovery TRUE'
+    if args.max_hold_paths is not None:
+        hold += f' -max_hold_violated_paths_num {args.max_hold_paths}'
     lines = ['# Same checked RTL and ADS/FDC setup, extended through routing; no bitstream.',
              *(source/'synthesize.tcl').read_text().splitlines(),
         'dev_map',
         'place',
-        'route -number_of_router_thread 1 -check_clk_net_route_by_srb TRUE',
-        'route_optimize -fix_hold_violation_in_route TRUE',
+        route,
+        hold,
         'report_timing -max_path 100 -nworst 3 -report_exception TRUE -report_logic_level_distribution',
     ]
     (target/'implement.tcl').write_text('\n'.join(lines)+'\n')
@@ -90,7 +102,8 @@ def main():
         'schema': 'npu128-pango-implementation-v1', 'top': prior['top'],
         'device': prior['device'], 'clock_period_ns': prior['clock_period_ns'],
         'threads': 1, 'parameters': {**prior['parameters'], 'activation_banks': 2,
-                                    'activation_words_per_bank': 24576, 'measurement_input_bits': 1716},
+                                    'activation_words_per_bank': 24576, 'measurement_input_bits': 1716,
+                                    'activation_segments_per_bank': 3, 'activation_segment_words': 8192},
         'source_base_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
         'source_branch': subprocess.check_output(['git', 'branch', '--show-current'], cwd=ROOT, text=True).strip(),
         'source_status': subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT, text=True).splitlines(),
@@ -100,6 +113,7 @@ def main():
         'flow': 'same ADS synthesis commands followed by physical implementation',
         'deferred_gate_validation': bool(args.rtl_validation),
         'constraints_unchanged': True, 'hold_fix_enabled': True, 'bitstream_requested': False,
+        'routing_recovery': args.routing_recovery, 'max_hold_paths': args.max_hold_paths,
     }
     (target/'manifest.json').write_text(json.dumps(manifest, indent=2)+'\n')
     print(f'PASS staged original-constraint physical implementation: {native}')

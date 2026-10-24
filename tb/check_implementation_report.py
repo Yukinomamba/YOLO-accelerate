@@ -7,10 +7,23 @@ import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]/'tools/pango'))
-from collect_implementation import canonical_netlist, final_unrouted_count, functional_report
+from collect_implementation import activation_memory_mapping, canonical_netlist, final_unrouted_count, functional_report
 
 
 class EvidenceTests(unittest.TestCase):
+    def test_memory_mapping_counts_physical_primitives_only(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/'mapping.log'
+            instance = 'u_npu/u_conv/g_activation_bank[0].g_segment[1].u_ram'
+            path.write_text(
+                f'| {instance}/mem | 8 K x 64 | | | | | |\n'
+                f'| {instance}/mem_0 | 8 K x 4 | 8 K x 4 | NORMAL_WRITE | NORMAL_WRITE | SIMPLE_DUAL_PORT | GTP_DRM36K_E1 |\n'
+                f'| {instance}/mem_1 | 8 K x 4 | 8 K x 4 | NORMAL_WRITE | NORMAL_WRITE | SIMPLE_DUAL_PORT | GTP_DRM36K_E1 |\n'
+                '| u_npu/u_conv/u_weight_ram/mem_0 | 1 K x 36 | 1 K x 36 | NORMAL_WRITE | NORMAL_WRITE | SIMPLE_DUAL_PORT | GTP_DRM36K_E1 |\n')
+            self.assertEqual(activation_memory_mapping(path), [{
+                'instance': instance, 'write_configuration': '8 K x 4',
+                'read_configuration': '8 K x 4', 'primitive': 'GTP_DRM36K_E1', 'count': 2}])
+
     def test_changed_netlist_requires_its_own_functional_pass(self):
         with tempfile.TemporaryDirectory() as directory:
             netlist, receipt = [Path(directory)/name for name in ('netlist.vm', 'gate.json')]

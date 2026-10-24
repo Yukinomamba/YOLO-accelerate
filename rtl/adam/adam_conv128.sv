@@ -53,7 +53,14 @@ module adam_conv128 #(
     state_t state_q;
     logic cmd_fire, out_fire, descriptor_ok;
     logic active_bank_q;
-    logic [63:0] act_bank_data [2];
+    // Bound each physical array to 8K words. A 24K array is otherwise mapped
+    // by ADS to 64 separate 32Kx1 DRM blocks, wasting the unused depth.
+    localparam int ACT_SEG_AW = ACT_AW < 13 ? ACT_AW : 13;
+    localparam int ACT_SEG_WORDS = 1 << ACT_SEG_AW;
+    localparam int ACT_SEGMENTS = (ACT_DEPTH + ACT_SEG_WORDS - 1) / ACT_SEG_WORDS;
+    logic [63:0] act_segment_data [2*ACT_SEGMENTS];
+    logic [2*ACT_SEGMENTS-1:0] act_segment_read, act_segment_select_q;
+    logic act_read_enable;
     logic [7:0] width_q, height_q, out_width_q, out_height_q;
     localparam int GROUP_W = (GROUPS < 2) ? 1 : $clog2(GROUPS + 1);
     localparam int PIXEL_W = (MAX_SIDE < 2) ? 1 : $clog2(MAX_SIDE * MAX_SIDE);
@@ -170,15 +177,34 @@ module adam_conv128 #(
         end
     end
 
+    assign act_read_enable = !rst && addr_valid_q[ADDR_STAGES-1] && !padding_q4;
     for (genvar bank = 0; bank < 2; bank++) begin : g_activation_bank
-        adam_sdp_ram #(.WIDTH(64), .DEPTH(ACT_DEPTH), .ADDR_W(ACT_AW)) u_ram (
-            .clk, .wr_en(act_wr_valid && act_wr_ready && act_wr_bank == 1'(bank)),
-            .wr_addr(act_wr_addr), .wr_data(act_wr_data),
-            .rd_en(!rst && addr_valid_q[ADDR_STAGES-1] && !padding_q4 && active_bank_q == 1'(bank)),
-            .rd_addr(act_rd_addr), .rd_data(act_bank_data[bank])
-        );
+        for (genvar segment = 0; segment < ACT_SEGMENTS; segment++) begin : g_segment
+            localparam int SLOT = bank*ACT_SEGMENTS + segment;
+            localparam int REMAINING = ACT_DEPTH - segment*ACT_SEG_WORDS;
+            localparam int DEPTH = REMAINING < ACT_SEG_WORDS ? REMAINING : ACT_SEG_WORDS;
+            assign act_segment_read[SLOT] = act_read_enable && active_bank_q == 1'(bank) &&
+                (int'({1'b0, act_rd_addr}) >> ACT_SEG_AW) == segment;
+            adam_sdp_ram #(.WIDTH(64), .DEPTH(DEPTH), .ADDR_W(ACT_SEG_AW)) u_ram (
+                .clk, .wr_en(act_wr_valid && act_wr_ready && act_wr_bank == 1'(bank) &&
+                            (int'({1'b0, act_wr_addr}) >> ACT_SEG_AW) == segment),
+                .wr_addr(act_wr_addr[ACT_SEG_AW-1:0]), .wr_data(act_wr_data),
+                .rd_en(act_segment_read[SLOT]), .rd_addr(act_rd_addr[ACT_SEG_AW-1:0]),
+                .rd_data(act_segment_data[SLOT])
+            );
+        end
     end
-    assign act_rd_data = active_bank_q ? act_bank_data[1] : act_bank_data[0];
+    // RAM data and the one-hot selector register on the same edge. Holding the
+    // selector through padding/bubbles matches the held synchronous RAM output.
+    always_ff @(posedge clk) begin
+        if (rst) act_segment_select_q <= '0;
+        else if (act_read_enable) act_segment_select_q <= act_segment_read;
+    end
+    always_comb begin
+        act_rd_data = '0;
+        for (int slot = 0; slot < 2*ACT_SEGMENTS; slot++)
+            if (act_segment_select_q[slot]) act_rd_data |= act_segment_data[slot];
+    end
     adam_sdp_ram #(.WIDTH(1024), .DEPTH(WEIGHT_DEPTH), .ADDR_W(WEIGHT_AW)) u_weight_ram (
         .clk, .wr_en(weight_wr_valid && weight_wr_ready), .wr_addr(weight_wr_addr), .wr_data(weight_wr_data),
         .rd_en(!rst && addr_valid_q[ADDR_STAGES-1]), .rd_addr(weight_rd_addr), .rd_data(weight_rd_data)

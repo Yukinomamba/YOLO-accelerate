@@ -25,6 +25,18 @@ def functional_report(path, netlist):
     return report
 
 
+def activation_memory_mapping(path):
+    configurations = {}
+    if path.is_file():
+        for line in path.read_text().splitlines():
+            columns = [part.strip() for part in line.split('|')]
+            if len(columns) > 7 and 'g_activation_bank[' in columns[1] and '/mem_' in columns[1]:
+                key = (columns[1].rsplit('/mem_', 1)[0], columns[2], columns[3], columns[7])
+                configurations[key] = configurations.get(key, 0) + 1
+    return [{'instance': key[0], 'write_configuration': key[1], 'read_configuration': key[2],
+             'primitive': key[3], 'count': count} for key, count in sorted(configurations.items())]
+
+
 def command_text(text):
     return ' '.join(text.replace('{', '').replace('}', '').split())
 
@@ -146,6 +158,9 @@ def main():
     files = [project/n for n in ('manifest.json', 'guard.json', 'guard-samples.jsonl',
                                  'implementation.log', 'npu128_impl.pds')]
     files += [regenerated, *pnr.rglob('*.adf'), *pnr.rglob('*.log'), *pnr.rglob('report_db/*.db')]
+    memory_mapping = project/'prj_tasks/syn_1/synthesize/apm_drm_hrm_lutram_utilization.log'
+    if memory_mapping.is_file():
+        files.append(memory_mapping)
     internal = [r for r in setup_paths if 'u_npu/' in r['Start Point'] and 'u_npu/' in r['End Point']]
     report = {
         'schema': 'npu128-routed-assessment-v1', 'date': guard['before']['timestamp'][:10],
@@ -172,6 +187,9 @@ def main():
         'clock_routed_over_srb_warning': clock_srb_warning,
         'timing_report_directory': str(db.relative_to(project)),
         'resources': resources, 'resource_report': str(resource_file.relative_to(project)),
+        'activation_ram_instances': [{k: r[k] for k in ('Module Inst Name', 'LUT', 'FF', 'APM', 'DRM')}
+                                     for r in resource_rows if 'g_activation_bank[' in r['Module Inst Name']],
+        'activation_memory_mapping': activation_memory_mapping(memory_mapping),
         'worst_setup_path': setup_paths[0] if setup_paths else None,
         'worst_hold_path': hold_paths[0] if hold_paths else None,
         'worst_internal_setup_among_reported': internal[0] if internal else None,

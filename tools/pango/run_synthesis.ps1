@@ -2,7 +2,7 @@
 param(
     [Parameter(Mandatory=$true)][string]$ProjectRoot,
     [string]$PdsHome = $env:PDS_HOME,
-    [ValidateRange(1,4)][int]$JobLimitGiB = 4,
+    [ValidateRange(1,4)][double]$JobLimitGiB = 4,
     [ValidateRange(4,64)][int]$ReserveGiB = 6,
     [ValidateRange(60,3600)][int]$TimeoutSeconds = 1800
 )
