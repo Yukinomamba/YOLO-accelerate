@@ -1,6 +1,9 @@
 # YOLO 加速器开发交接
 
-> 最新分支 `fpga/npu128-ramcompact` 的 RAM 映射压缩及接续步骤见 [RAM128.md](RAM128.md)。
+> 最新分支 `fpga/npu128-mmio` 已完成控制/数据窗口、C11 接口和公开总线端到端仿真，见 [MMIO128.md](MMIO128.md)。
+> 19 个任务、672 个输出向量、269,859 次总线事务通过；新外围尚未做 PDS、总线/串口桥或上板，未改 hgb。
+
+> 计算核基线 `fpga/npu128-ramcompact` 的 RAM 映射压缩及接续步骤见 [RAM128.md](RAM128.md)。
 > 已恢复此前的内存暂停；模块预规划使原 100 MHz 布线 setup/hold 通过，RAM 为 126.5 DRM。
 > setup +0.214 ns、hold +0.037 ns、未布通 0；数值、周期等价、新网表回放及总验收均通过。
 > 最新独立物理结果以 RAM128.md 和 `reports/npu128-ramcompact-validation.json` 为准，尚未上板或接入 SoC。

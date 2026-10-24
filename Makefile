@@ -3,14 +3,16 @@ VERILATOR ?= verilator
 MODEL ?= yolox-tiny
 ADAM_BUILD ?= build/adam128
 NPU_BUILD ?= build/npu128
+MMIO_BUILD ?= build/mmio
 TORCH_PYTHON ?= python3
 IMAGE ?= build/upstream/YOLOX/assets/dog.jpg
 OUTPUT ?= build/dog-adam128.png
 SIZE ?= 416
 ADAM_RTL = rtl/adam/adam_mul_pair.sv rtl/adam/adam_sdp_ram.sv rtl/adam/adam_mac128.sv rtl/adam/adam_conv128.sv
 NPU_RTL = $(ADAM_RTL) rtl/npu/npu_postprocess.sv rtl/npu/npu_conv128.sv rtl/npu/npu_measure_top.sv
+MMIO_RTL = $(ADAM_RTL) rtl/npu/npu_postprocess.sv rtl/npu/npu_conv128.sv rtl/npu/npu_mmio128.sv
 
-.PHONY: test lint upstream-test upstream-lint adam-test adam-lint npu-test npu-lint tile-test audit audit-both image-sim image-test image-detect clean
+.PHONY: test lint upstream-test upstream-lint adam-test adam-lint npu-test npu-lint mmio-test mmio-lint tile-test audit audit-both image-sim image-test image-detect clean
 .NOTPARALLEL: test lint
 test: upstream-test
 
@@ -27,6 +29,12 @@ npu-test:
 
 npu-lint:
 	$(PYTHON) tools/run_guarded.py --log $(NPU_BUILD)/lint.log --metrics $(NPU_BUILD)/lint.metrics.json -- $(VERILATOR) --lint-only -Wall --top-module npu_measure_top $(NPU_RTL)
+
+mmio-test:
+	$(PYTHON) tools/run_mmio_tests.py --verilator $(VERILATOR) --build-dir $(MMIO_BUILD)
+
+mmio-lint:
+	$(PYTHON) tools/run_guarded.py --min-available-mib 6144 --log $(MMIO_BUILD)/lint.log --metrics $(MMIO_BUILD)/lint.metrics.json -- $(VERILATOR) --lint-only -Wall --top-module npu_mmio128 $(MMIO_RTL)
 
 adam-test:
 	$(PYTHON) tools/run_adam_tests.py --verilator $(VERILATOR) --build-dir $(ADAM_BUILD)
