@@ -7,7 +7,7 @@ import struct
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from npu_uart import (SimulatorWire, Client, request, reply, ID, STATUS, ERRORS,
-                      CONTROL, SHAPE, OPTIONS, BIAS, WEIGHT_DATA, ACT_DATA, RAW, CFG_INDEX, CFG_DATA, CFG_COMMIT)
+                      CONTROL, SHAPE, OPTIONS, BIAS, WEIGHT_DATA, ACT_DATA, RAW, CFG_INDEX, CFG_DATA, CFG_COMMIT, weight_request)
 
 
 class TraceWire(SimulatorWire):
@@ -26,9 +26,10 @@ def main():
     parser.add_argument('--simulator', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--clock-hz', type=int, choices=[27000000, 100000000], default=27000000)
+    parser.add_argument('--bulk-weights', action='store_true')
     args = parser.parse_args()
     wire = TraceWire(args.simulator, args.clock_hz)
-    c = Client(wire)
+    c = Client(wire, bulk_weights=args.bulk_weights)
     try:
         c.sync(0x1357a55a); assert c.read(ID) == 0x4e505531
         c.write(CONTROL, 2)
@@ -44,6 +45,12 @@ def main():
         c.activation(1, 0, int.from_bytes(bytes(v & 255 for v in activation), 'little'))
         weights = [(oc*3+ic) % 17-8 for oc in range(16) for ic in range(8)]
         c.weight(0, bytes(v & 255 for v in weights))
+        if args.bulk_weights:
+            sequence = (c.sequence-1) & 255
+            frame = weight_request(sequence, 0, bytes(v & 255 for v in weights))
+            assert reply(wire.exchange(frame), sequence) == (0, 34)
+            conflict = weight_request(sequence, 0, bytes([0x5a])*128)
+            assert reply(wire.exchange(conflict), sequence) == (4, 0)
         assert c.read(WEIGHT_DATA+124) == int.from_bytes(bytes(v & 255 for v in weights[124:]), 'little')
         biases = [oc*11-9 for oc in range(15)]+[0x7fffffff]
         for oc, value in enumerate(biases): c.write(BIAS+oc*4, value)
@@ -76,7 +83,10 @@ def main():
         assert c.read(ERRORS) == 16
         c.write(ERRORS, 31)
         cycles = wire.close()
-        args.output.write_text(''.join(f'{int.from_bytes(a,"little"):028x} {int.from_bytes(b,"little"):024x}\n' for a, b in wire.trace))
+        if args.bulk_weights:
+            args.output.write_text(''.join(f'{len(a)} {int.from_bytes(a,"little"):0284x} {int.from_bytes(b,"little"):024x}\n' for a, b in wire.trace))
+        else:
+            args.output.write_text(''.join(f'{int.from_bytes(a,"little"):028x} {int.from_bytes(b,"little"):024x}\n' for a, b in wire.trace))
         args.output.with_suffix('.json').write_text(json.dumps({'status': 'PASS', 'frames': len(wire.trace),
             'public_pin_simulation_clocks': cycles, 'output': output}, indent=2)+'\n')
         print(f'PASS generated {len(wire.trace)} scalar-checked public-pin golden frames')

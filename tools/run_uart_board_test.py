@@ -24,6 +24,7 @@ def main():
     parser.add_argument('--rtl-validation', type=Path, default=ROOT/'reports/npu128-uart-validation.json')
     parser.add_argument('--jtag-validation', type=Path, default=ROOT/'reports/npu128-uart-board.json')
     parser.add_argument('--bitstream-validation', type=Path, default=ROOT/'reports/npu128-uart-bitstream.json')
+    parser.add_argument('--bulk-weights', action='store_true')
     parser.add_argument('--host-validation', type=Path, help='current host-only verification when the client changed')
     args = parser.parse_args()
     if args.output.exists():
@@ -41,6 +42,9 @@ def main():
     assert jtag['bitstream_validation_sha256'] == digest(bit_path)
     assert functional['default_parameters']['CLOCK_HZ'] == bit['clock_hz'] == jtag['clock_hz']
     assert bit['immutable_sha256']['input/rtl-validation.json'] == digest(functional_path)
+    if args.bulk_weights:
+        assert functional.get('bulk_weights') is True
+        assert bit['bitstream_configuration']['usercode'] == '12810002'
     host = None
     if args.host_validation:
         host = json.loads(args.host_validation.read_text(encoding='utf-8'))
@@ -59,7 +63,7 @@ def main():
         'timestamp_utc': datetime.now(timezone.utc).isoformat(), 'port': matches[0].device,
         'usb_vid': '10c4', 'usb_pid': 'ea60', 'pyserial': serial.__version__,
         'python': platform.python_version(), 'host': platform.platform(),
-        'baud': 115200, 'clock_hz': bit['clock_hz'], 'timeout_seconds': args.timeout, 'source_sha256': source_hashes,
+        'bulk_weights': args.bulk_weights, 'baud': 115200, 'clock_hz': bit['clock_hz'], 'timeout_seconds': args.timeout, 'source_sha256': source_hashes,
         'rtl_validation_sha256': digest(functional_path), 'jtag_reference_sha256': digest(jtag_path),
         'host_validation_sha256': digest(args.host_validation) if host else None,
         'bitstream_validation_sha256': digest(bit_path), 'bitstream_sha256': bit['bitstream_sha256'],
@@ -69,10 +73,10 @@ def main():
             'JTAG reference is from the earlier verified configuration; this UART run reads NPU ID/ABI without a fresh JTAG scan.',
             'No injected lost replies on hardware; protocol fault/retry coverage is in the separate RTL report.']}
     wire, client = None, None
-    start = time.monotonic()
+    start = time.perf_counter()
     try:
         wire = SerialWire(args.port, 115200, args.timeout)
-        client = Client(wire)
+        client = Client(wire, bulk_weights=args.bulk_weights)
         client.sync()
         identity = {'id': client.read(ID), 'abi': client.read(ABI), 'status_before': client.read(STATUS)}
         assert identity['id'] == 0x4e505531 and identity['abi'] == 0x10000
@@ -91,7 +95,7 @@ def main():
     finally:
         if wire is not None:
             wire.close()
-        report['elapsed_seconds'] = time.monotonic()-start
+        report['elapsed_seconds'] = time.perf_counter()-start
         if client is not None:
             report.update(transactions=client.transactions, retransmissions=client.retries_used)
         for name, expected in source_hashes.items():

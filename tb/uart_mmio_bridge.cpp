@@ -29,7 +29,7 @@ public:
     }
     void feed(const std::vector<uint8_t>& b) {
         for (auto x:b) { d.rx_valid=1; d.rx_data=x; tick(); }
-        d.rx_valid=0; eval();
+        d.rx_valid=0; tick(); eval();
     }
     std::vector<uint8_t> response() {
         unsigned wait=0;
@@ -43,6 +43,52 @@ public:
         d.tx_ready=0; eval(); check(!d.tx_valid,"extra reply bytes");
         check(b[0]==0x5a && b[1]==0xa5 && b[2]==1 && b[5]==0,"reply header");
         check(crc(b,2,10)==uint16_t(b[10]|unsigned(b[11])<<8),"reply CRC"); return b;
+    }
+    std::vector<uint8_t> bulk_frame(unsigned seq,unsigned index=863) {
+        std::vector<uint8_t> b{0xa5,0x5a,1,uint8_t(seq),3,0,0,1};
+        for (unsigned i=0;i<4;i++) b.push_back(uint8_t(index>>(8*i)));
+        for (unsigned i=0;i<128;i++) b.push_back(uint8_t(i*7+19));
+        uint16_t x=crc(b,2,b.size()); b.push_back(uint8_t(x)); b.push_back(uint8_t(x>>8)); return b;
+    }
+    std::vector<uint8_t> run_bulk(const std::vector<uint8_t>& f,int fail=-1) {
+        d.req_ready=0; d.rsp_valid=0; d.rsp_error=0; feed(f);
+        for (unsigned step=0;step<34;step++) {
+            check(d.req_valid && d.req_write && d.req_wstrb==15,"bulk request missing");
+            unsigned addr=step==0?0x2c:step==33?0x3c:0x100+(step-1)*4;
+            uint32_t data=step==33?1:0;
+            unsigned offset=step==0?8:12+(step-1)*4;
+            if (step!=33) for (unsigned i=0;i<4;i++) data|=uint32_t(f[offset+i])<<(i*8);
+            for (unsigned n=0;n<3+step%5;n++) {
+                check(d.req_addr==addr && d.req_wdata==data && d.req_valid,"bulk payload/address changed under stall"); tick();
+            }
+            d.req_ready=1; tick(); d.req_ready=0;
+            for (unsigned n=0;n<2+step%3;n++) {check(d.rsp_ready && !d.req_valid,"bulk must wait for acknowledgement");tick();}
+            d.rsp_error=int(step)==fail; d.rsp_rdata=0xdeadbeef; d.rsp_valid=1;tick();d.rsp_valid=0;
+            if(int(step)==fail) break;
+        }
+        return response();
+    }
+    void bulk_tests() {
+        reset(); d.req_ready=0; d.rsp_valid=0;
+        auto f=bulk_frame(60);unsigned before=requests;
+        auto ack=run_bulk(f);check(ack[4]==0 && ack[6]==34 && requests==before+34,"bulk complete count");
+        before=requests;feed(f);check(response()==ack && requests==before,"bulk retry repeated side effects");
+        auto conflict=f;conflict[12]^=1;uint16_t csum=crc(conflict,2,140);conflict[140]=uint8_t(csum);conflict[141]=uint8_t(csum>>8);
+        feed(conflict);check(response()[4]==4 && requests==before,"bulk payload conflict accepted");
+        auto bad=bulk_frame(61);bad[90]^=1;feed(bad);check(response()[4]==3 && requests==before,"bad bulk CRC caused effects");
+        feed(f);check(response()==ack && requests==before,"bad frame destroyed cached payload");
+        feed(bulk_frame(61,864));check(response()[4]==2 && requests==before,"bulk index range accepted");
+        for(int fail: {0,1,16,33}) {
+            auto frame=bulk_frame(unsigned(70+fail));before=requests;auto error=run_bulk(frame,fail);
+            check(error[4]==1 && error[6]==fail && requests==before+unsigned(fail)+1,"bulk failure prefix/count");
+            before=requests;feed(frame);check(response()==error && requests==before,"failed bulk retry reexecuted prefix");
+        }
+        auto partial=bulk_frame(110);partial.resize(57);before=requests;feed(partial);
+        for(unsigned i=0;i<40;i++)tick();check(requests==before && !d.req_valid,"partial bulk caused effects");
+        auto next=bulk_frame(111);auto success=run_bulk(next);check(success[4]==0,"partial bulk timeout recovery");
+        auto interrupted=bulk_frame(112);d.req_ready=0;feed(interrupted);
+        d.req_ready=1;tick();d.req_ready=0;check(d.rsp_ready,"bulk response setup before reset");
+        before=requests;reset();check(!d.req_valid && !d.tx_valid && requests==before,"reset failed to cancel bulk suffix");
     }
     void test() {
         auto f=frame(19,1,0xaabbccdd); feed(f);
@@ -67,6 +113,6 @@ public:
     }
 };
 int main() {
-    try { Bench b; b.test(); std::cout<<"PASS uart_mmio_bridge: held requests/responses, "<<b.tx_stalls<<" TX stall cycles, duplicate/conflict/CRC/timeout/reset; "<<b.requests<<" actual MMIO requests\n"; }
+    try { Bench b; b.test(); b.bulk_tests(); std::cout<<"PASS uart_mmio_bridge: held requests/responses, "<<b.tx_stalls<<" TX stall cycles, duplicate/conflict/CRC/timeout/reset; "<<b.requests<<" actual MMIO requests; bulk 34-write ordering, full-payload replay, CRC/range rejection, failure prefix and reset\n"; }
     catch(const std::exception& e) { std::cerr<<"FAIL "<<e.what()<<'\n'; return 1; }
 }

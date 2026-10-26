@@ -15,6 +15,10 @@ $proof = Get-Content -Raw -LiteralPath $Validation | ConvertFrom-Json
 $expectedUsercode = '12802701'
 $expectedTop = 'npu_uart_board'
 if ($proof.clock_hz -eq 100000000) { $expectedUsercode = '12810001'; $expectedTop = 'npu_uart_board100' }
+if ($proof.bulk_weights) {
+    if ($proof.clock_hz -ne 100000000) { throw 'Bulk profile requires 100 MHz.' }
+    $expectedUsercode = '12810002'
+}
 if ($proof.schema -ne 'npu128-uart-bitstream-assessment-v1' -or $proof.status -ne 'PASS' -or
     $proof.device -ne 'PG2L200H-6IFBB676' -or $proof.clock_hz -notin @(27000000,100000000) -or
     $proof.actual_settings.'Top Module' -ne $expectedTop -or

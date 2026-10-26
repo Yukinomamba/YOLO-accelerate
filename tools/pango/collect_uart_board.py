@@ -22,6 +22,9 @@ def main():
     clock_hz = proof['clock_hz']
     assert clock_hz in (27000000, 100000000)
     expected_code = '12810001' if clock_hz == 100000000 else '12802701'
+    if proof.get('bulk_weights'):
+        assert clock_hz == 100000000
+        expected_code = '12810002'
     receipt_path = p/'program-a/program-receipt.json'
     receipt = json.loads(receipt_path.read_text())
     assert receipt['schema'] == 'npu128-uart-jtag-v1' and receipt['status'] == 'PASS'
@@ -58,9 +61,11 @@ def main():
         'program_uart_board.ps1', 'GuardedJob.cs', 'program-a/program.tcl', 'program-a/program.log',
         'program-a/program-receipt.json', 'program-a/bitstream-validation.json', 'serial-inventory.json',
         'jtag-server.stdout.log', 'jtag-server.stderr.log']]
+    raw += sorted(p.glob('jtag-server*.log')) + sorted(p.glob('jtag-server*process.json'))
     report = {'schema': 'npu128-uart-board-assessment-v1', 'status': 'JTAG_PASS_UART_PENDING',
         'scope': 'actual board volatile JTAG programming/readback only; UART convolution not run',
         'device': 'PG2L200H', 'idcode': '0x00603899', 'clock_hz': clock_hz,
+        'bulk_weights': proof.get('bulk_weights', False),
         'bitstream_validation_sha256': digest(args.bitstream_validation),
         'bitstream_sha256': proof['bitstream_sha256'], 'usercode': '0x'+code,
         'config_status': f'0x{status:08x}', 'done': True, 'configuration_error_mask': '0x1800001f',

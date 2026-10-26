@@ -91,7 +91,7 @@ int main() {
             }
             if (op!='X') throw std::runtime_error("bad simulator operation");
             std::string hex; int delta=0,bad_stop=-1; input>>hex; input>>delta>>bad_stop;
-            if (hex.size()%2 || hex.size()>256) throw std::runtime_error("bad hex request");
+            if (hex.size()%2 || hex.size()>512) throw std::runtime_error("bad hex request");
             std::vector<uint8_t> bytes;
             for (unsigned i=0;i<hex.size();i+=2) bytes.push_back(uint8_t(std::stoul(hex.substr(i,2),nullptr,16)));
             auto reply=b.exchange(bytes,delta,bad_stop);

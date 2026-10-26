@@ -29,6 +29,13 @@ def request(sequence, op, address=0, data=0, strobes=0):
     return b'\xa5\x5a'+body+struct.pack('<H', crc16(body))
 
 
+def weight_request(sequence, index, data):
+    if not 0 <= sequence < 256 or not 0 <= index < 864 or len(data) != 128:
+        raise ValueError('bulk weight frame shape/index')
+    body = struct.pack('<BBBBHI', 1, sequence, 3, 0, WEIGHT_DATA, index)+bytes(data)
+    return b'\xa5\x5a'+body+struct.pack('<H', crc16(body))
+
+
 def reply(frame, sequence):
     if len(frame) != 12 or frame[:3] != b'\x5a\xa5\x01' or frame[3] != sequence or frame[5] != 0:
         raise ValueError('reply header, length or sequence mismatch')
@@ -116,13 +123,17 @@ class SerialWire:
 
 
 class Client:
-    def __init__(self, wire, retries=2):
+    def __init__(self, wire, retries=2, bulk_weights=False):
         self.wire, self.retries = wire, retries
+        self.bulk_weights = bulk_weights
         self.sequence = 0
         self.transactions = self.retries_used = 0
 
     def transact(self, op, address=0, data=0, strobes=0):
         frame = request(self.sequence, op, address, data, strobes)
+        return self._exchange(frame, address)
+
+    def _exchange(self, frame, address):
         for attempt in range(self.retries+1):
             try:
                 status, value = reply(self.wire.exchange(frame), self.sequence)
@@ -169,6 +180,10 @@ class Client:
     def weight(self, index, data):
         if not 0 <= index < 864 or len(data) != 128:
             raise ValueError('weight shape')
+        if self.bulk_weights:
+            if self._exchange(weight_request(self.sequence, index, data), WEIGHT_DATA) != 34:
+                raise RuntimeError('bulk weight acknowledgement count')
+            return
         self.write(WEIGHT_INDEX, index)
         for i, word in enumerate(struct.unpack('<32I', data)):
             self.write(WEIGHT_DATA+i*4, word)
@@ -289,11 +304,12 @@ def main():
     parser.add_argument('--clock-hz', type=int, choices=[27000000, 100000000], default=27000000,
                         help='simulator component clock; physical UART still uses --baud')
     parser.add_argument('--timeout', type=float, default=1)
+    parser.add_argument('--bulk-weights', action='store_true', help='requires op3-capable bitstream')
     parser.add_argument('--self-test', action='store_true', help='resets the diagnostic NPU and replaces test input/weights/configuration')
     args = parser.parse_args()
     wire = SimulatorWire(args.simulator, args.clock_hz) if args.simulator else SerialWire(args.port, args.baud, args.timeout)
     try:
-        client = Client(wire)
+        client = Client(wire, bulk_weights=args.bulk_weights)
         client.sync()
         result = self_test(client) if args.self_test else {'id': hex(client.read(ID)), 'abi': hex(client.read(ABI)), 'status': client.read(STATUS)}
         print(json.dumps(result, indent=2))

@@ -17,6 +17,10 @@ if ($manifest.schema -ne 'npu128-pango-bitstream-v1' -or $manifest.device -ne 'P
 $expectedUsercode = '12802701'
 $expectedTop = 'npu_uart_board'
 if ($manifest.clock_hz -eq 100000000) { $expectedUsercode = '12810001'; $expectedTop = 'npu_uart_board100' }
+if ($manifest.bulk_weights) {
+    if ($manifest.clock_hz -ne 100000000) { throw 'Bulk profile requires 100 MHz.' }
+    $expectedUsercode = '12810002'
+}
 if ($manifest.top -ne $expectedTop -or $manifest.bitstream_configuration.scbv -ne 'High Voltage' -or $manifest.bitstream_configuration.usercode -ne $expectedUsercode) {
     throw 'Unexpected board configuration voltage or diagnostic usercode.'
 }

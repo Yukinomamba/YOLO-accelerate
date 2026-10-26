@@ -23,6 +23,10 @@ def main():
                 100000000: ('npu_uart_board100', 'npu128_uart100', 10.0,
                            'npu128-uart100-routed-assessment-v1', '12810001')}
     top, project_name, period, schema, usercode = profiles[config['clock_hz']]
+    bulk_weights = report['functional_validation'].get('bulk_weights', False)
+    if bulk_weights:
+        assert config['clock_hz'] == 100000000
+        usercode = '12810002'
     assert config['scbv'] == 'High Voltage' and config['configuration_bank_voltage'] == 3.3
     assert config['device'] == report['device'] and config['usercode'] == usercode
     assert report['schema'] == schema and report['status'] == 'PASS'
@@ -68,6 +72,7 @@ def main():
     immutable[script.name] = digest(script)
     manifest = {'schema': 'npu128-pango-bitstream-v1', 'device': report['device'],
         'top': top, 'clock_hz': config['clock_hz'], 'project_name': project_name, 'action': 'gen_bit_stream',
+        'bulk_weights': bulk_weights,
         'repository_config': str(args.config.resolve().relative_to(ROOT)),
         'repository_implementation': str(args.implementation.resolve().relative_to(ROOT)),
         'source_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),

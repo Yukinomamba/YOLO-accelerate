@@ -47,7 +47,8 @@ def main():
         metrics.append(json.loads((build/f'{name}.metrics.json').read_text()))
 
     guarded('trace', [sys.executable, ROOT/'tools/pango/uart_gate_trace.py', '--simulator', args.simulator,
-        '--output', trace, '--clock-hz', functional['default_parameters']['CLOCK_HZ']])
+        '--output', trace, '--clock-hz', functional['default_parameters']['CLOCK_HZ'],
+        *(['--bulk-weights'] if functional.get('bulk_weights') else [])])
     extra = []
     if pll:
         # Digital byte replay deliberately replaces only analog clock generation.
@@ -68,7 +69,8 @@ def main():
         extra = [stub]
     guarded('build', [ROOT/'build/tools/iverilog/root/usr/bin/iverilog', '-B', ivl, '-g2012', '-y', vendor,
         '-s', 'tb_uart_byte_replay', '-o', build/'mapped.vvp', netlist, bench, *extra])
-    guarded('run', [ROOT/'build/tools/iverilog/root/usr/bin/vvp', '-M', ivl, build/'mapped.vvp', f'+TRACE={trace}'])
+    guarded('run', [ROOT/'build/tools/iverilog/root/usr/bin/vvp', '-M', ivl, build/'mapped.vvp', f'+TRACE={trace}',
+        *(['+VARIABLE'] if functional.get('bulk_weights') else [])])
     result = (build/'run.log').read_text().strip()
     assert 'PASS mapped UART byte replay:' in result and not any(x in result for x in ('FAIL', 'ERROR', 'FATAL'))
     models = {}

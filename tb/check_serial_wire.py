@@ -115,6 +115,24 @@ class SerialTests(unittest.TestCase):
             client.write(uart.CONTROL, 1)
         self.assertEqual((len(port.writes), client.sequence, client.retries_used), (1, 1, 0))
 
+    def test_bulk_lost_reply_retries_complete_payload(self):
+        wire, port = self.wire([b'', response(0, value=34)])
+        client = uart.Client(wire, bulk_weights=True)
+        payload = bytes(range(128))
+        client.weight(863, payload)
+        expected = uart.weight_request(0, 863, payload)
+        self.assertEqual(port.writes, [expected, expected])
+        self.assertEqual(len(expected), 142)
+        self.assertEqual((client.transactions, client.retries_used), (1, 1))
+
+    def test_bulk_rejects_bad_shape_before_io(self):
+        wire, port = self.wire([])
+        client = uart.Client(wire, bulk_weights=True)
+        for index, payload in [(864, bytes(128)), (0, bytes(127))]:
+            with self.assertRaises(ValueError):
+                client.weight(index, payload)
+        self.assertEqual(port.writes, [])
+
     def test_short_write_and_close(self):
         wire, port = self.wire([b''], short_write=True)
         with self.assertRaises(OSError):

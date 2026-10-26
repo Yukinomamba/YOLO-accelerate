@@ -29,6 +29,7 @@ def main():
     assert digest(physical_path) == m['implementation_sha256'] == digest(implementation)
     physical = json.loads(physical_path.read_text())
     assert physical['status'] == 'PASS' and physical['mapped_functional_run']
+    assert m.get('bulk_weights', False) == physical['functional_validation'].get('bulk_weights', False)
     for name, expected in physical['functional_validation']['source_sha256'].items():
         assert digest(ROOT/name) == expected, name
     original = Path(m['source_project'])
@@ -59,6 +60,7 @@ def main():
            p/'bitstream.log', p/'uart_bitstream.pds', *directory.rglob('*')]
     report = {'schema': 'npu128-uart-bitstream-assessment-v1', 'status': 'PASS',
         'device': m['device'], 'top': m['top'], 'clock_hz': m['clock_hz'], 'project': m['project'],
+        'bulk_weights': m.get('bulk_weights', False),
         'source_commit': m['source_commit'], 'implementation_sha256': m['implementation_sha256'],
         'routed_database_sha256': m['routed_database_sha256'], 'immutable_sha256': m['immutable_sha256'],
         'bitstream': str(bits[0].relative_to(p)), 'bitstream_sha256': digest(bits[0]),

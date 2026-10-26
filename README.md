@@ -1,6 +1,11 @@
 # YOLO-accelerate
 
-> 2026-10-26：当前 `fpga/npu128-uart-host` 完成主机收包优化，同位流三组卷积实测
+> 当前 `fpga/npu128-uart-bulk` 已实现 128 字节权重批量帧，最终功能、隔离反例、四态网表和
+> 100 MHz 布线通过（setup +0.707 ns、hold +0.039 ns）。新位流 `12810002` JTAG 下载/回读通过，
+> 同位流旧/批量模式三组卷积均通过、零重传：19.091 → 11.401 秒；权重有效吞吐约 6.97 倍，
+> 见 [UART_BULK128.md](docs/UART_BULK128.md)。
+>
+> 2026-10-26 前一阶段 `fpga/npu128-uart-host` 完成主机收包优化，同位流三组卷积实测
 > **77.672 → 18.828 秒（约 4.13 倍）**，2,759 次事务、零重传，输出逐值一致。
 > RTL/100 MHz 位流未变，完整记录见 [UART_HOST128.md](docs/UART_HOST128.md)。
 >
@@ -45,6 +50,7 @@ RISC-V 控制的静态图像目标检测加速器。电脑传入图片，软核�
 | `fpga/npu128-uart` | 板载 27 MHz、真实 UART/KEY0 管脚、CRC 停等桥与 Python 客户端 | 引脚仿真及字节级门级回放通过；27 MHz PDS setup +20.614 ns、hold +0.039 ns、未布通 0；126.5 DRM，见 `docs/UART128.md` |
 | `fpga/npu128-mmio-timing` | MMIO 请求/提交流水及真实 27→100 MHz GPLL 板级入口 | 完整顶层 100 MHz setup +0.805 ns、hold +0.039 ns；6,946 LUT / 9,625 FF / 82 APM / 126.5 DRM；JTAG 与 COM11 三组卷积实测通过，见 `docs/MMIO_TIMING128.md` |
 | `fpga/npu128-uart-host` | 固定帧收包与同位流吞吐测量 | 三组卷积 77.672 → 18.828 秒，2,759 笔零重传；RTL/位流不变，见 `docs/UART_HOST128.md` |
+| `fpga/npu128-uart-bulk` | 完整权重字批量写、全帧 CRC 与缓存去重、帧错隔离 | 功能/网表及 100 MHz setup +0.707 ns、hold +0.039 ns 通过；JTAG 12810002 和实板旧/批量模式均通过；2,759 → 1,538 笔，完整流程约 1.67 倍，见 `docs/UART_BULK128.md` |
 
 早期 Nano 评估、候选选型、128 MAC 初始移植和图片仿真的阶段分支已移除，相关提交仍在
 `main` 历史中。图片复现使用标签 `baseline/adam128-image-cosim-20261023`（`658b547`）。
