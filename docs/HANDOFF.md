@@ -1,6 +1,11 @@
 # YOLO 加速器开发交接
 
-> 当前 `fpga/npu128-mmio-timing` 已把完整板级入口提升至真实 PLL 100 MHz，见
+> 2026-10-26：最新 `fpga/npu128-uart-host` 仅优化主机收包，见 [UART_HOST128.md](UART_HOST128.md)。
+> 同位流实板完整流程 77.672 → 18.828 秒，2,759 笔事务、零重传，三组卷积全部输出一致。
+> 已从配置丢失状态恢复原 100 MHz 位流，用户已按本次 KEY0；没有改 RTL/约束或重跑 PDS。
+> 下一步按实测事务分布实现权重窗口批量写，再验收批量协议和新位流。
+
+> 硬件阶段 `fpga/npu128-mmio-timing` 已把完整板级入口提升至真实 PLL 100 MHz，见
 > [MMIO_TIMING128.md](MMIO_TIMING128.md)。分级 MMIO 的 21 任务/674 向量回归、
 > 厂商 PLL 整顶层锁定/复位及 200 周期测试、100 MHz 完整 UART 引脚回归和新网表四态回放均通过；
 > 完整顶层 100 MHz 布线 setup +0.805 ns、hold +0.039 ns、未布通 0；6,946 LUT / 9,625 FF / 82 APM / 126.5 DRM。

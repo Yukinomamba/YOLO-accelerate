@@ -1,6 +1,10 @@
 # YOLO-accelerate
 
-> 当前 `fpga/npu128-mmio-timing` 已将完整板级入口提升至真实 PLL 100 MHz：
+> 2026-10-26：当前 `fpga/npu128-uart-host` 完成主机收包优化，同位流三组卷积实测
+> **77.672 → 18.828 秒（约 4.13 倍）**，2,759 次事务、零重传，输出逐值一致。
+> RTL/100 MHz 位流未变，完整记录见 [UART_HOST128.md](docs/UART_HOST128.md)。
+>
+> 前一硬件阶段 `fpga/npu128-mmio-timing` 已将完整板级入口提升至真实 PLL 100 MHz：
 > 分级 MMIO 21 任务/674 向量、100 MHz 分频的完整 UART 引脚回归、厂商 PLL 锁定/复位测试、
 > 新综合网表 103 帧四态回放均通过。完整顶层 100 MHz 布线 setup +0.805 ns、hold +0.039 ns、未布通 0；
 > 新位流 JTAG 下载/回读及 COM11 三组卷积实测通过：12 向量、384 个 RAW/INT8 值一致，
@@ -40,6 +44,7 @@ RISC-V 控制的静态图像目标检测加速器。电脑传入图片，软核�
 | `fpga/npu128-mmio` | 控制寄存器、激活/权重暂存提交、单向量读回槽和 C11 传输接口 | 19 任务、672 向量、269,859 次公开总线事务通过；外围 PDS/上板待做，见 `docs/MMIO128.md` |
 | `fpga/npu128-uart` | 板载 27 MHz、真实 UART/KEY0 管脚、CRC 停等桥与 Python 客户端 | 引脚仿真及字节级门级回放通过；27 MHz PDS setup +20.614 ns、hold +0.039 ns、未布通 0；126.5 DRM，见 `docs/UART128.md` |
 | `fpga/npu128-mmio-timing` | MMIO 请求/提交流水及真实 27→100 MHz GPLL 板级入口 | 完整顶层 100 MHz setup +0.805 ns、hold +0.039 ns；6,946 LUT / 9,625 FF / 82 APM / 126.5 DRM；JTAG 与 COM11 三组卷积实测通过，见 `docs/MMIO_TIMING128.md` |
+| `fpga/npu128-uart-host` | 固定帧收包与同位流吞吐测量 | 三组卷积 77.672 → 18.828 秒，2,759 笔零重传；RTL/位流不变，见 `docs/UART_HOST128.md` |
 
 早期 Nano 评估、候选选型、128 MAC 初始移植和图片仿真的阶段分支已移除，相关提交仍在
 `main` 历史中。图片复现使用标签 `baseline/adam128-image-cosim-20261023`（`658b547`）。

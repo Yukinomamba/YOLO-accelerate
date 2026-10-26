@@ -24,6 +24,7 @@ def main():
     parser.add_argument('--rtl-validation', type=Path, default=ROOT/'reports/npu128-uart-validation.json')
     parser.add_argument('--jtag-validation', type=Path, default=ROOT/'reports/npu128-uart-board.json')
     parser.add_argument('--bitstream-validation', type=Path, default=ROOT/'reports/npu128-uart-bitstream.json')
+    parser.add_argument('--host-validation', type=Path, help='current host-only verification when the client changed')
     args = parser.parse_args()
     if args.output.exists():
         parser.error('preserve previous evidence; choose a new output file')
@@ -40,8 +41,17 @@ def main():
     assert jtag['bitstream_validation_sha256'] == digest(bit_path)
     assert functional['default_parameters']['CLOCK_HZ'] == bit['clock_hz'] == jtag['clock_hz']
     assert bit['immutable_sha256']['input/rtl-validation.json'] == digest(functional_path)
+    host = None
+    if args.host_validation:
+        host = json.loads(args.host_validation.read_text(encoding='utf-8'))
+        assert host['schema'] == 'npu128-uart-host-functional-v1' and host['status'] == 'PASS'
+        assert host['baseline_client_sha256'] == functional['source_sha256']['tools/npu_uart.py']
+        for name, expected in host['source_sha256'].items():
+            assert digest(ROOT/name) == expected, name
     for name, expected in functional['source_sha256'].items():
-        assert digest(ROOT/name) == expected, name
+        if digest(ROOT/name) != expected:
+            assert name == 'tools/npu_uart.py' and host is not None, name
+            assert digest(ROOT/name) == host['source_sha256'][name], name
     source_hashes = {'tools/npu_uart.py': digest(ROOT/'tools/npu_uart.py'),
                      'tools/run_uart_board_test.py': digest(Path(__file__))}
     report = {'schema': 'npu128-uart-hardware-functional-v1', 'status': 'RUNNING',
@@ -51,6 +61,7 @@ def main():
         'python': platform.python_version(), 'host': platform.platform(),
         'baud': 115200, 'clock_hz': bit['clock_hz'], 'timeout_seconds': args.timeout, 'source_sha256': source_hashes,
         'rtl_validation_sha256': digest(functional_path), 'jtag_reference_sha256': digest(jtag_path),
+        'host_validation_sha256': digest(args.host_validation) if host else None,
         'bitstream_validation_sha256': digest(bit_path), 'bitstream_sha256': bit['bitstream_sha256'],
         'board_run': True, 'simulator_used': False,
         'limitations': ['Three synthetic tiles, not full YOLOX inference or accuracy validation.',

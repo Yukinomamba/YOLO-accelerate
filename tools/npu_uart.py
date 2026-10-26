@@ -96,7 +96,9 @@ class SerialWire:
         data = bytearray()
         deadline = time.monotonic()+self.timeout
         while time.monotonic() < deadline:
-            data.extend(self.port.read(64))
+            # A reply is exactly 12 bytes; read(64) waits for its timeout even
+            # after the full reply arrived. After resync request the missing tail.
+            data.extend(self.port.read(max(1, 12-len(data))))
             while len(data) >= 12:
                 if data[:2] != b'\x5a\xa5':
                     del data[0]
